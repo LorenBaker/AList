@@ -1,0 +1,46 @@
+<resources>
+
+    <color name="preset0_title_background">#002F2F</color>
+    <color name="preset0_title_text">#EFECCA</color>
+    <color name="preset0_list_background">#046380</color>
+    <color name="preset0_list_normal_text">#EFECCA</color>
+    <color name="preset0_list_strikeout_text">#A7A37E</color>
+    <color name="preset0_separator_background">#A7A37E</color>
+    <color name="preset0_separator_text">#E6E2AF</color>
+    <color name="preset1_title_background">#16193B</color>
+    <color name="preset1_title_text">#ADD5F7</color>
+    <color name="preset1_list_background">#4E7AC7</color>
+    <color name="preset1_list_normal_text">#ADD5F7</color>
+    <color name="preset1_list_strikeout_text">#7FB2F0</color>
+    <color name="preset1_separator_background">#35478C</color>
+    <color name="preset1_separator_text">#7FB2F0</color>
+    <color name="preset2_title_background">#00261C</color>
+    <color name="preset2_title_text">#96ED89</color>
+    <color name="preset2_list_background">#168039</color>
+    <color name="preset2_list_normal_text">#96ED89</color>
+    <color name="preset2_list_strikeout_text">#044D29</color>
+    <color name="preset2_separator_background">#044D29</color>
+    <color name="preset2_separator_text">#45BF55</color>
+    <color name="preset3_title_background">#E3CDA4</color>
+    <color name="preset3_title_text">#2F343B</color>
+    <color name="preset3_list_background">#7E827A</color>
+    <color name="preset3_list_normal_text">#2F343B</color>
+    <color name="preset3_list_strikeout_text">#703030</color>
+    <color name="preset3_separator_background">#C77966</color>
+    <color name="preset3_separator_text">#2F343B</color>
+    <color name="preset4_title_background">#B31E00</color>
+    <color name="preset4_title_text">#FFC887</color>
+    <color name="preset4_list_background">#FFC887</color>
+    <color name="preset4_list_normal_text">#CC5400</color>
+    <color name="preset4_list_strikeout_text">#FF8A00</color>
+    <color name="preset4_separator_background">#B33600</color>
+    <color name="preset4_separator_text">#FFC887</color>
+    <color name="preset5_title_background">#425955</color>
+    <color name="preset5_title_text">#F1F2D8</color>
+    <color name="preset5_list_background">#778C7A</color>
+    <color name="preset5_list_normal_text">#F1F2D8</color>
+    <color name="preset5_list_strikeout_text">#BFBD9F</color>
+    <color name="preset5_separator_background">#BFBD9F</color>
+    <color name="preset5_separator_text">#778C7A</color>
+
+</resources>

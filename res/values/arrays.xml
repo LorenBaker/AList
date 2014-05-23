@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="grocery_items">
+        <item>Aleve</item>
+        <item>Almonds</item>
+        <item>Apple Cider Vinegar</item>
+        <item>Apples</item>
+        <item>Avocado</item>
+        <item>Baby Food</item>
+        <item>Bacon</item>
+        <item>Baked Beans</item>
+        <item>Balsamic Vinegar</item>
+        <item>Bananas</item>
+        <item>Beer</item>
+        <item>Black Olives</item>
+        <item>Blue Cheese</item>
+        <item>Blueberries</item>
+        <item>Bread</item>
+        <item>Broccoli</item>
+        <item>Buns</item>
+        <item>Buttermilk</item>
+        <item>Butternut Squash</item>
+        <item>Cabbage</item>
+        <item>Carrots</item>
+        <item>Cereal</item>
+        <item>Cheese</item>
+        <item>Chicken</item>
+        <item>Chicken Broth</item>
+        <item>Chicken Thighs</item>
+        <item>Clif Bars</item>
+        <item>Corn-canned</item>
+        <item>Corn-fresh</item>
+        <item>Corn-frozen</item>
+        <item>Cottage Cheese</item>
+        <item>Cream Cheese</item>
+        <item>Cream of Mushroom Soup</item>
+        <item>Distilled Water</item>
+        <item>Eggs</item>
+        <item>Enchilada Sauce</item>
+        <item>Feta</item>
+        <item>Flour </item>
+        <item>Garlic</item>
+        <item>Grapefruit</item>
+        <item>Grapes</item>
+        <item>Ground Beef</item>
+        <item>Ground Turkey</item>
+        <item>Hummus</item>
+        <item>Kleenex</item>
+        <item>Lemons</item>
+        <item>Lettuce</item>
+        <item>Limes</item>
+        <item>Manicotti Noodles</item>
+        <item>Masa\'s Curry Sauce</item>
+        <item>Mayonnaise</item>
+        <item>Milk</item>
+        <item>Mozzarella</item>
+        <item>Mustard</item>
+        <item>Olive Oil</item>
+        <item>Orange Juice-fresh</item>
+        <item>Orange Juice-frozen</item>
+        <item>Oranges</item>
+        <item>Parmesan Cheese</item>
+        <item>Peanut Butter</item>
+        <item>Pickles</item>
+        <item>Pineapple</item>
+        <item>Port Tenderloin</item>
+        <item>Potatoes</item>
+        <item>Relish</item>
+        <item>Rhubarb</item>
+        <item>Sour Cream</item>
+        <item>Spinach</item>
+        <item>String Cheese</item>
+        <item>Toilet Paper</item>
+        <item>Tomato Soup</item>
+        <item>Tomatoes</item>
+        <item>Toothpaste</item>
+        <item>Tuna</item>
+        <item>Vanilla</item>
+        <item>Vinegar</item>
+        <item>Vodka</item>
+        <item>Wine</item>
+        <item>Yogurt</item>
+    </string-array>
+    <string-array name="grocery_items_groups">
+        <item>Health-Beauty</item>
+        <item>Nuts (packaged)</item>
+        <item>Condiments</item>
+        <item>Produce</item>
+        <item>Produce</item>
+        <item>Baby Products</item>
+        <item>Meat-Seafood</item>
+        <item>Beans (canned)</item>
+        <item>Condiments</item>
+        <item>Produce</item>
+        <item>Beer</item>
+        <item>Condiments</item>
+        <item>Deli</item>
+        <item>Produce</item>
+        <item>Breads</item>
+        <item>Produce</item>
+        <item>Breads</item>
+        <item>Dairy (milks)</item>
+        <item>Produce</item>
+        <item>Produce</item>
+        <item>Produce</item>
+        <item>Cereals</item>
+        <item>Dairy (cheeses-yogurts)</item>
+        <item>Meat-Seafood</item>
+        <item>Soups</item>
+        <item>Meat-Seafood</item>
+        <item>Snacks</item>
+        <item>Vegetables (canned)</item>
+        <item>Produce</item>
+        <item>Vegetables (frozen)</item>
+        <item>Dairy (cheeses-yogurts)</item>
+        <item>Dairy (cheeses-yogurts)</item>
+        <item>Soups</item>
+        <item>Beverages</item>
+        <item>Dairy (eggs)</item>
+        <item>Ethnic Foods</item>
+        <item>Deli</item>
+        <item>Baking Products</item>
+        <item>Produce</item>
+        <item>Produce</item>
+        <item>Produce</item>
+        <item>Meat-Seafood</item>
+        <item>Meat-Seafood</item>
+        <item>Deli</item>
+        <item>Health-Beauty</item>
+        <item>Produce</item>
+        <item>Produce</item>
+        <item>Produce</item>
+        <item>Pasta/Pasta Sauce</item>
+        <item>Ethnic Foods</item>
+        <item>Condiments</item>
+        <item>Dairy (milks)</item>
+        <item>Dairy (cheeses-yogurts)</item>
+        <item>Condiments</item>
+        <item>Baking Products</item>
+        <item>Juices (chilled)</item>
+        <item>Juices (frozen)</item>
+        <item>Produce</item>
+        <item>Deli</item>
+        <item>Jams, Jellies, Honey</item>
+        <item>Condiments</item>
+        <item>Produce</item>
+        <item>Meat-Seafood</item>
+        <item>Produce</item>
+        <item>Condiments</item>
+        <item>Produce</item>
+        <item>Dairy (cheeses-yogurts)</item>
+        <item>Produce</item>
+        <item>Dairy (cheeses-yogurts)</item>
+        <item>Paper Products</item>
+        <item>Soups</item>
+        <item>Produce</item>
+        <item>Health-Beauty</item>
+        <item>Meat-Seafood (canned)</item>
+        <item>Spices</item>
+        <item>Condiments</item>
+        <item>Wine</item>
+        <item>Wine</item>
+        <item>Dairy (cheeses-yogurts)</item>
+    </string-array>
+    <string-array name="grocery_groups">
+        <item>Baby Products</item>
+        <item>Bakery</item>
+        <item>Baking Products</item>
+        <item>BBQ Supplies</item>
+        <item>Beans (canned)</item>
+        <item>Beans/rice/soup (dried)</item>
+        <item>Beer</item>
+        <item>Beverages</item>
+        <item>Beverages (chilled)</item>
+        <item>Books-Cards</item>
+        <item>Breads</item>
+        <item>Breakfast Products</item>
+        <item>Candy</item>
+        <item>Cereals</item>
+        <item>Cleaning Supplies</item>
+        <item>Coffee/Tea</item>
+        <item>Processed Meats</item>
+        <item>Condiments</item>
+        <item>Cookies</item>
+        <item>Crackers</item>
+        <item>Dairy (cheeses-yogurts)</item>
+        <item>Dairy (eggs)</item>
+        <item>Dairy (milks)</item>
+        <item>Deli</item>
+        <item>Desserts (frozen)</item>
+        <item>Dried Fruit</item>
+        <item>Ethnic Foods</item>
+        <item>Feminine Care</item>
+        <item>Floral</item>
+        <item>Foil-Plastic Wrap</item>
+        <item>Fruit (canned)</item>
+        <item>Health-Beauty</item>
+        <item>Household Goods</item>
+        <item>Jams, Jellies, Honey</item>
+        <item>Juices</item>
+        <item>Juices (chilled)</item>
+        <item>Juices (frozen)</item>
+        <item>Meals (frozen)</item>
+        <item>Meat-Seafood</item>
+        <item>Meat-Seafood (canned)</item>
+        <item>Meat-Seafood (frozen)</item>
+        <item>Nuts (packaged)</item>
+        <item>Paper Products</item>
+        <item>Pasta/Pasta Sauce</item>
+        <item>Pet Supplies</item>
+        <item>Pharmacy</item>
+        <item>Potatoes (dried)</item>
+        <item>Prepared Foods (fresh)</item>
+        <item>Produce</item>
+        <item>Snacks</item>
+        <item>Soups</item>
+        <item>Spices</item>
+        <item>Sports Drinks</item>
+        <item>Tomato Products (canned)</item>
+        <item>Vegetables (canned)</item>
+        <item>Vegetables (frozen)</item>
+        <item>Wine</item>
+    </string-array>
+    <string-array name="grocery_stores">
+        <item>Safeway-Issaquah</item>
+    </string-array>
+    <string-array name="todo_items">
+        <item>To Do Item A</item>
+        <item>To Do Item B</item>
+        <item>To Do Item C</item>
+    </string-array>
+    <string-array name="todo_groups">
+        <item>Priority 1</item>
+        <item>Priority 2</item>
+        <item>Priority 3</item>
+    </string-array>
+    <string-array name="locations">
+        <item>Aisle  1</item>
+        <item>Aisle  2</item>
+        <item>Aisle  3</item>
+        <item>Aisle  4</item>
+        <item>Aisle  5</item>
+        <item>Aisle  6</item>
+        <item>Aisle  7</item>
+        <item>Aisle  7-8</item>
+        <item>Aisle  8</item>
+        <item>Aisle  9</item>
+        <item>Aisle 10</item>
+        <item>Aisle 11</item>
+        <item>Aisle 12</item>
+        <item>Aisle 13</item>
+        <item>Aisle 14</item>
+        <item>Aisle 15</item>
+        <item>Aisle 16</item>
+        <item>Aisle 17</item>
+        <item>Aisle 18</item>
+        <item>Check Stand</item>
+        <item>Store Back Center</item>
+        <item>Store Back Left</item>
+        <item>Store Back Right</item>
+        <item>Store Front Center</item>
+        <item>Store Front Left</item>
+        <item>Store Front Right</item>
+        <item>Store Left Side</item>
+        <item>Store Right Side</item>
+        <item>Store  Right</item>
+    </string-array>
+    <string-array name="Safeway_Issaquah_Locations">
+        <item>Aisle  9</item>
+        <item>Store Front Right</item>
+        <item>Aisle 15</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle 16</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle  4</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle  1</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle 14</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle 16</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle  3</item>
+        <item>Store Back Center</item>
+        <item>Store Back Left</item>
+        <item>Store Left Side</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle 17</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Store Back Center</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle 14</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Store Back Center</item>
+        <item>Aisle 17</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle 10</item>
+        <item>Aisle 17</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Store Right Side</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle 18</item>
+        <item>Aisle 15</item>
+        <item>[No LOCATION]</item>
+        <item>[No LOCATION]</item>
+        <item>Aisle 16</item>
+        <item>Aisle 12</item>
+        <item>Aisle  1</item>
+    </string-array>
+</resources>
