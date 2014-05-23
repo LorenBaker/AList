@@ -1,0 +1,53 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/action_deleteCheckedItems"
+        android:icon="@drawable/ic_action_discard"
+        android:orderInCategory="10"
+        android:showAsAction="ifRoom"
+        android:title="Delete checked itmes"/>
+    <item
+        android:id="@+id/action_clearAllCheckedItems"
+        android:orderInCategory="15"
+        android:showAsAction="never"
+        android:title="Clear all checked items"/>
+    <item
+        android:id="@+id/action_moveCheckedItmes"
+        android:orderInCategory="20"
+        android:showAsAction="never"
+        android:title="Move checked items"/>
+    <item
+        android:id="@+id/action_checkUnused90"
+        android:orderInCategory="30"
+        android:showAsAction="never"
+        android:title="Check unused over 90 days"/>
+    <item
+        android:id="@+id/action_checkUnused180"
+        android:orderInCategory="40"
+        android:showAsAction="never"
+        android:title="Check unused over 180 days"/>
+    <item
+        android:id="@+id/action_checkUnused365"
+        android:orderInCategory="50"
+        android:showAsAction="never"
+        android:title="Check unused over 365 days"/>
+    <item
+        android:id="@+id/action_editGroupName"
+        android:orderInCategory="53"
+        android:showAsAction="never"
+        android:title="Edit selected group name"/>
+    <item
+        android:id="@+id/action_addNewGroup"
+        android:orderInCategory="54"
+        android:showAsAction="never"
+        android:title="Add new group"/>
+    <item
+        android:id="@+id/action_deleteGroup"
+        android:orderInCategory="55"
+        android:showAsAction="never"
+        android:title="Delete selected group"/>
+    <item
+        android:id="@+id/action_sortOrder"
+        android:orderInCategory="60"
+        android:showAsAction="never"
+        android:title="Sort order"/>
+</menu>

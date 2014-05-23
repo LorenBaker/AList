@@ -1,0 +1,26 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/action_clearAllCheckedGroups"
+        android:showAsAction="never"
+        android:title="Clear all checked groups"/>
+    <item
+        android:id="@+id/action_editLocationName"
+        android:showAsAction="never"
+        android:title="Edit selected location name"/>
+    <item
+        android:id="@+id/action_addNewLocation"
+        android:showAsAction="never"
+        android:title="Add new location"/>
+    <item
+        android:id="@+id/action_deleteLocation"
+        android:showAsAction="never"
+        android:title="Delete selected location"/>
+    <item
+        android:id="@+id/action_sortOrder"
+        android:showAsAction="never"
+        android:title="Sort order"/>
+    <item
+        android:id="@+id/action_manageStores"
+        android:showAsAction="never"
+        android:title="Manage Stores"/>
+</menu>

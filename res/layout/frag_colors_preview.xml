@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/colorsPreviewFragmentLinearLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_weight="9"
+    android:orientation="vertical"
+    android:padding="0dp" >
+
+    <include layout="@layout/list_title" />
+
+    <TextView
+        android:id="@+id/tvListNormalText"
+        style="@android:style/TextAppearance.Medium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:text="@string/tvListNormalText" />
+
+    <TextView
+        android:id="@+id/tvListStrikeOutText"
+        style="@android:style/TextAppearance.Medium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="5dp"
+        android:text="@string/tvListStrikeOutText" />
+
+    <include layout="@layout/list_items_separator" />
+
+</LinearLayout>

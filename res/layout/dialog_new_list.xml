@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp" >
+    <ProgressBar
+        android:id="@+id/pbLoadingIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:indeterminateOnly="true"
+        android:keepScreenOn="true"
+        android:visibility="gone" />
+    <Spinner
+        android:id="@+id/spinListTemplate"
+        android:layout_width="match_parent"
+        android:layout_height="48dp" />
+    <EditText
+        android:id="@+id/txtEditListTitle"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="@string/txtEditListTitle_Hint"
+        android:inputType="textAutoCorrect|textCapWords" />
+    <LinearLayout
+        android:id="@+id/llButtons"
+        android:layout_width="match_parent"
+        android:layout_height="96dp"
+        android:layout_marginTop="5dp"
+        android:orientation="horizontal"
+        android:paddingBottom="6dp"
+        android:paddingLeft="2dp"
+        android:paddingRight="2dp"
+        android:paddingTop="2dp" >
+        <Button
+            android:id="@+id/btnCancel"
+            style="@android:style/ButtonBar"
+            android:layout_width="0dp"
+            android:layout_height="96dp"
+            android:layout_gravity="center"
+            android:layout_margin="2dp"
+            android:layout_weight="1"
+            android:background="@drawable/alist_custom_button_square_corners_no_stroke"
+            android:text="@string/btn_cancel_text"
+            android:textSize="20sp" />
+        <Button
+            android:id="@+id/btnApply"
+            style="@android:style/ButtonBar"
+            android:layout_width="0dp"
+            android:layout_height="96dp"
+            android:layout_gravity="center"
+            android:layout_margin="2dp"
+            android:layout_weight="1"
+            android:background="@drawable/alist_custom_button_square_corners_no_stroke"
+            android:text="@string/btn_apply_text"
+            android:textSize="20sp" />
+    </LinearLayout>
+</LinearLayout>

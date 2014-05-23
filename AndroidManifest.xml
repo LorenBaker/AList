@@ -8,13 +8,16 @@
 		android:minSdkVersion="16"
 		android:targetSdkVersion="19" />
 
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
 	<application
 		android:allowBackup="true"
 		android:icon="@drawable/ic_launcher"
 		android:label="@string/app_name"
 		android:theme="@style/AppTheme" >
 		<activity
-			android:name="com.lbconsulting.alist.MainActivity"
+			android:name="com.lbconsulting.alist.ui.ListsActivity"
 			android:label="@string/app_name" >
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
@@ -22,6 +25,74 @@
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
 		</activity>
+		<activity
+			android:name="com.lbconsulting.alist.ui.AboutActivity"
+			android:label="@string/app_name"
+			android:parentActivityName="com.lbconsulting.alist.ui.ListsActivity" >
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.lbconsulting.alist.ui.ListsActivity" />
+		</activity>
+		<activity
+			android:name="com.lbconsulting.alist.ui.ColorsActivity"
+			android:label="@string/app_name"
+			android:parentActivityName="com.lbconsulting.alist.ui.ListPreferencesActivity" >
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.lbconsulting.alist.ui.ListPreferencesActivity" />
+		</activity>
+		<activity
+			android:name="com.lbconsulting.alist.ui.CheckItemsActivity"
+			android:label="@string/app_name"
+			android:parentActivityName="com.lbconsulting.alist.ui.MasterListActivity" >
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.lbconsulting.alist.ui.MasterListActivity" />
+		</activity>
+		<activity
+			android:name="com.lbconsulting.alist.ui.ListPreferencesActivity"
+			android:label="@string/app_name"
+			android:parentActivityName="com.lbconsulting.alist.ui.ListsActivity" >
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.lbconsulting.alist.ui.ListsActivity" />
+		</activity>
+		<activity
+			android:name="com.lbconsulting.alist.ui.MasterListActivity"
+			android:label="@string/app_name"
+			android:parentActivityName="com.lbconsulting.alist.ui.ListsActivity" >
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.lbconsulting.alist.ui.ListsActivity" />
+		</activity>
+		<activity
+			android:name="com.lbconsulting.alist.ui.StoresActivity"
+			android:label="@string/app_name"
+			android:parentActivityName="com.lbconsulting.alist.ui.ListsActivity" >
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.lbconsulting.alist.ui.ManageLocationsActivity" />
+		</activity>
+		<activity
+			android:name="com.lbconsulting.alist.ui.ManageLocationsActivity"
+			android:label="@string/app_name"
+			android:parentActivityName="com.lbconsulting.alist.ui.ListsActivity" >
+			<meta-data
+				android:name="android.support.PARENT_ACTIVITY"
+				android:value="com.lbconsulting.alist.ui.ListsActivity" />
+		</activity>
+
+		<service
+			android:name="com.dropbox.sync.android.DbxSyncService"
+			android:enabled="true"
+			android:exported="false"
+			android:label="Dropbox Sync" />
+
+		<provider
+			android:name="com.lbconsulting.alist.database.AListContentProvider"
+			android:authorities="com.lbconsulting.alist.contentprovider"
+			android:exported="false" >
+		</provider>
 	</application>
 
 </manifest>

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/llFragListPreferences"
+    style="@android:style/TextAppearance.DeviceDefault.Small"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical" >
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <LinearLayout
+            style="@android:style/TextAppearance.DeviceDefault.Small"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="1dp"
+            android:layout_marginRight="1dp"
+            android:orientation="vertical" >
+
+            <include layout="@layout/store_title" />
+
+            <EditText
+                android:id="@+id/txtStreet1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Street1" />
+
+            <EditText
+                android:id="@+id/txtStreet2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Street2" />
+
+            <EditText
+                android:id="@+id/txtCity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="City" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+
+                <EditText
+                    android:id="@+id/txtState"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="State" />
+
+                <EditText
+                    android:id="@+id/txtZipCode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Zip Code" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+
+                <EditText
+                    android:id="@+id/txtGPSLatitude"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="GPS Latitude" />
+
+                <EditText
+                    android:id="@+id/txtGPSLongitude"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="GPS Longitude" />
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/txtWebsiteURL"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Website URL"
+                android:inputType="textUri" />
+
+            <EditText
+                android:id="@+id/txtPhoneNumber"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Phone Number"
+                android:inputType="phone" />
+
+            <Button
+                android:id="@+id/btnApplyStoreChanges"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:background="@drawable/alist_custom_button_square_corners_no_stroke"
+                android:text="Apply Store Changes" />
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/llFragListPreferences"
+    style="@android:style/TextAppearance.DeviceDefault.Small"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical" >
+    <include layout="@layout/list_title" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+        <LinearLayout
+            style="@android:style/TextAppearance.DeviceDefault.Medium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="7dp"
+            android:layout_marginRight="7dp"
+            android:orientation="vertical" >
+            <Button
+                android:id="@+id/btnEditListTitle"
+                style="@android:style/TextAppearance.DeviceDefault.Small"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left|center_vertical"
+                android:text="Edit list title" />
+            <RadioGroup
+                android:id="@+id/rbGroupListsView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:orientation="vertical" >
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="5dp"
+                    android:text="@string/lists_view_sorting"
+                    android:textStyle="bold|italic" />
+                <RadioButton
+                    android:id="@+id/rbListsViewAlphabetical"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="@string/sort_option_alphabetical" />
+                <RadioButton
+                    android:id="@+id/rbListsViewGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="@string/sort_option_by_group" />
+                <RadioButton
+                    android:id="@+id/rbListsViewManual"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="@string/sort_option_manual" />
+                <RadioButton
+                    android:id="@+id/rbListsViewStoreLocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="@string/sort_option_store_location" />
+                <Switch
+                    android:id="@+id/swDeleteNoteUponClearingItem"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="15dp"
+                    android:text="@string/delete_note_upon_clearing_item" />
+            </RadioGroup>
+            <RadioGroup
+                android:id="@+id/rbGroupMasterListsView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical" >
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="5dp"
+                    android:text="@string/master_list_view_sorting"
+                    android:textStyle="bold|italic" />
+                <RadioButton
+                    android:id="@+id/rbMasterListViewAlphabetical"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="@string/sort_option_alphabetical" />
+                <RadioButton
+                    android:id="@+id/rbMasterListViewGroup"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="@string/sort_option_by_group" />
+                <RadioButton
+                    android:id="@+id/rbMasterListViewLastUsed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="@string/sort_option_last_used" />
+                <RadioButton
+                    android:id="@+id/rbMasterListViewSelectedAtTop"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="@string/sort_option_selected_items_at_top" />
+                <RadioButton
+                    android:id="@+id/rbMasterListViewSelectedAtBottom"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="10dp"
+                    android:text="@string/sort_option_selected_items_at_bottom" />
+            </RadioGroup>
+            <Button
+                android:id="@+id/btnColors"
+                style="@android:style/TextAppearance.DeviceDefault.Small"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="left|center_vertical"
+                android:text="Colors" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

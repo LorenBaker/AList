@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp" >
+
+    <RadioGroup
+        android:id="@+id/radioGroup_master_list_sort_order"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <RadioButton
+            android:id="@+id/rbAlphabetical_master_list"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/sort_option_alphabetical" />
+
+        <RadioButton
+            android:id="@+id/rbSelectedItemsAtTop"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/sort_option_selected_items_at_top" />
+
+        <RadioButton
+            android:id="@+id/rbSelectedItemsAtBottom"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/sort_option_selected_items_at_bottom" />
+
+        <RadioButton
+            android:id="@+id/rbLastUsed"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/sort_option_last_used" />
+    </RadioGroup>
+
+    <LinearLayout
+        android:id="@+id/llButtons"
+        android:layout_width="match_parent"
+        android:layout_height="96dp"
+        android:orientation="horizontal"
+        android:paddingBottom="6dp"
+        android:paddingLeft="2dp"
+        android:paddingRight="2dp"
+        android:paddingTop="2dp" >
+
+        <Button
+            android:id="@+id/btnCancel"
+            style="@android:style/ButtonBar"
+            android:layout_width="0dp"
+            android:layout_height="96dp"
+            android:layout_gravity="center"
+            android:layout_margin="2dp"
+            android:layout_weight="1"
+            android:text="@string/btn_cancel_text"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/btnApply"
+            style="@android:style/ButtonBar"
+            android:layout_width="0dp"
+            android:layout_height="96dp"
+            android:layout_gravity="center"
+            android:layout_margin="2dp"
+            android:layout_weight="1"
+            android:text="@string/btn_apply_text"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#222"
+    android:orientation="vertical"
+    android:padding="4dp" >
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal" >
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="18"
+            android:orientation="vertical" >
+            <android.support.v4.view.ViewPager
+                android:id="@+id/colorsPreviewFragmentPager"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginRight="4dp"
+                android:layout_weight="6" />
+            <LinearLayout
+                android:id="@+id/colorsPicker"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_marginRight="4dp"
+                android:layout_weight="11"
+                android:orientation="vertical" >
+                <com.larswerkman.holocolorpicker.ColorPicker
+                    android:id="@+id/picker"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="11dp"
+                    app:color_center_halo_radius="36dp"
+                    app:color_center_radius="32dp"
+                    app:color_pointer_halo_radius="11dp"
+                    app:color_pointer_radius="12dp"
+                    app:color_wheel_radius="74dp"
+                    app:color_wheel_thickness="9dp" />
+                <com.larswerkman.holocolorpicker.SaturationBar
+                    android:id="@+id/saturationBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="67dp"
+                    android:layout_gravity="center"
+                    android:layout_margin="5dp" />
+                <com.larswerkman.holocolorpicker.SVBar
+                    android:id="@+id/SVBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="67dp"
+                    android:layout_gravity="center"
+                    android:layout_margin="5dp" />
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="7"
+            android:baselineAligned="false"
+            android:orientation="vertical" >
+            <ScrollView
+                android:id="@+id/presetsScrollView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right" >
+                <LinearLayout
+                    android:id="@+id/preSetButtonsLinearLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" >
+                    <Button
+                        android:id="@+id/btnPreset0"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/preset0_background"
+                        android:text="@string/btnPreset0_text" />
+                    <Button
+                        android:id="@+id/btnPreset1"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/preset1_background"
+                        android:text="@string/btnPreset1_text" />
+                    <Button
+                        android:id="@+id/btnPreset2"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/preset2_background"
+                        android:text="@string/btnPreset2_text" />
+                    <Button
+                        android:id="@+id/btnPreset3"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/preset3_background"
+                        android:text="@string/btnPreset3_text" />
+                    <Button
+                        android:id="@+id/btnPreset4"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/preset4_background"
+                        android:text="@string/btnPreset4_text" />
+                    <Button
+                        android:id="@+id/btnPreset5"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/preset5_background"
+                        android:text="@string/btnPreset5_text" />
+                </LinearLayout>
+            </ScrollView>
+            <ScrollView
+                android:id="@+id/pickerScrollView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right" >
+                <LinearLayout
+                    android:id="@+id/colorControlButtonsLinearLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" >
+                    <Button
+                        android:id="@+id/btnSetTitleBackground"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/color_picker_background"
+                        android:text="@string/btnTitleBackground" />
+                    <Button
+                        android:id="@+id/btnSetTitleText"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/color_picker_background"
+                        android:text="@string/btnTitleText" />
+                    <Button
+                        android:id="@+id/btnSetListBackground"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/color_picker_background"
+                        android:text="@string/btnListBackground" />
+                    <Button
+                        android:id="@+id/btnSetListNormalText"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/color_picker_background"
+                        android:text="@string/btnListNormalText" />
+                    <Button
+                        android:id="@+id/btnSetListStrikeOutText"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/color_picker_background"
+                        android:text="@string/btnListStrikeOutText" />
+                    <Button
+                        android:id="@+id/btnSetSeparatorBackground"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/color_picker_background"
+                        android:text="@string/btnSeparatorBackground" />
+                    <Button
+                        android:id="@+id/btnSetSeparatorText"
+                        style="@android:style/ButtonBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:layout_gravity="right"
+                        android:background="@drawable/color_picker_background"
+                        android:text="@string/btnSeparatorText" />
+                </LinearLayout>
+            </ScrollView>
+        </LinearLayout>
+    </LinearLayout>
+    <Button
+        android:id="@+id/btnApply"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/alist_custom_button_square_corners_no_stroke"
+        android:text="@string/btn_apply_text" />
+</LinearLayout>
