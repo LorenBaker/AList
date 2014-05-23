@@ -485,17 +485,16 @@ public class ListsActivity extends FragmentActivity {
 
 		} catch (SQLiteException e) {
 			MyLog.e("Lists_ACTIVITY: getList SQLiteException: ", e.toString());
-			if (listCursor != null) {
-				listCursor.close();
-			}
 			return null;
 
 		} catch (IllegalArgumentException e) {
 			MyLog.e("Lists_ACTIVITY: getList IllegalArgumentException: ", e.toString());
+			return null;
+
+		} finally {
 			if (listCursor != null) {
 				listCursor.close();
 			}
-			return null;
 		}
 		if (listCursor != null) {
 			listCursor.close();

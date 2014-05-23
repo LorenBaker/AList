@@ -16,12 +16,12 @@ import com.lbconsulting.alist.database.ItemsTable;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
-public class CheckItemsCursorAdaptor extends CursorAdapter {
+public class ManageItemsCursorAdaptor extends CursorAdapter {
 
 	Context mAdaptorContext;
 	ListSettings mListSettings;
 
-	public CheckItemsCursorAdaptor(Context context, Cursor c, int flags, ListSettings listSettings) {
+	public ManageItemsCursorAdaptor(Context context, Cursor c, int flags, ListSettings listSettings) {
 		super(context, c, flags);
 		this.mAdaptorContext = context;
 		this.mListSettings = listSettings;

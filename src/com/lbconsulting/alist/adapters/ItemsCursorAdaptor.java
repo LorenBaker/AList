@@ -21,7 +21,7 @@ import com.lbconsulting.alist.database.BridgeTable;
 import com.lbconsulting.alist.database.GroupsTable;
 import com.lbconsulting.alist.database.ItemsTable;
 import com.lbconsulting.alist.database.LocationsTable;
-import com.lbconsulting.alist.ui.fragments.ColorsPreviewFragment;
+import com.lbconsulting.alist.ui.fragments.ListColorsPreviewFragment;
 import com.lbconsulting.alist.utilities.MyLog;
 
 public class ItemsCursorAdaptor extends CursorAdapter implements DynamicListView.SwappableListAdapter {
@@ -47,7 +47,7 @@ public class ItemsCursorAdaptor extends CursorAdapter implements DynamicListView
 		};
 		// Register to receive messages.
 		String key = String.valueOf(mListSettings.getListID())
-				+ ColorsPreviewFragment.APPLY_PRESET_COLORS_BROADCAST_KEY;
+				+ ListColorsPreviewFragment.APPLY_PRESET_COLORS_BROADCAST_KEY;
 		LocalBroadcastManager.getInstance(context1).registerReceiver(mListColorsChanged, new IntentFilter(key));
 	}
 

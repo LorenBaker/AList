@@ -27,7 +27,7 @@ import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.dialogs.ListsDialogFragment;
-import com.lbconsulting.alist.ui.activities.ColorsActivity;
+import com.lbconsulting.alist.ui.activities.ListColorsActivity;
 import com.lbconsulting.alist.ui.activities.ListPreferencesActivity;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
@@ -349,7 +349,7 @@ public class ListPreferencesFragment extends Fragment {
 	};
 
 	private void StartColorsActivity() {
-		Intent colorsActivityIntent = new Intent(getActivity(), ColorsActivity.class);
+		Intent colorsActivityIntent = new Intent(getActivity(), ListColorsActivity.class);
 		getActivity().startActivity(colorsActivityIntent);
 	}
 

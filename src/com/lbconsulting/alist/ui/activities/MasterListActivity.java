@@ -184,7 +184,7 @@ public class MasterListActivity extends FragmentActivity implements LoaderManage
 	}
 
 	private void StartCheckItemsActivity() {
-		Intent checkItemsActivityIntent = new Intent(this, CheckItemsActivity.class);
+		Intent checkItemsActivityIntent = new Intent(this, ManageItemsActivity.class);
 		startActivity(checkItemsActivityIntent);
 	}
 

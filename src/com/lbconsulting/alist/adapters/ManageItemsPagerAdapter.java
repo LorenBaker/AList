@@ -7,18 +7,18 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 
 import com.lbconsulting.alist.database.ListsTable;
-import com.lbconsulting.alist.ui.fragments.CheckItemsFragment;
+import com.lbconsulting.alist.ui.fragments.ManageItemsFragment;
 import com.lbconsulting.alist.utilities.MyLog;
 
 //FragmentStatePagerAdapter
 //FragmentPagerAdapter
-public class CheckItemsPagerAdapter extends FragmentStatePagerAdapter {
+public class ManageItemsPagerAdapter extends FragmentStatePagerAdapter {
 
 	private Cursor mAllListsCursor;
 	private Context mContext;
 	private int mCount;
 
-	public CheckItemsPagerAdapter(FragmentManager fm, Context context) {
+	public ManageItemsPagerAdapter(FragmentManager fm, Context context) {
 		super(fm);
 		this.mContext = context;
 		setAllListsCursor();
@@ -28,7 +28,7 @@ public class CheckItemsPagerAdapter extends FragmentStatePagerAdapter {
 	public Fragment getItem(int position) {
 		long listID = getlistID(position);
 		MyLog.d("CheckItemsPagerAdapter", "getItem - position=" + position + "; listID=" + listID);
-		Fragment newCheckItemsFragment = CheckItemsFragment.newInstance(listID);
+		Fragment newCheckItemsFragment = ManageItemsFragment.newInstance(listID);
 		return newCheckItemsFragment;
 	}
 

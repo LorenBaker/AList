@@ -1,1 +1,1 @@
-AList - an awesome list management application.  You may create multiple separate lists and customize each one separately. Especially awesome for grocery lists where you can enter grocery store item location information and display your list by location … e.g.: ketchup on Aisle 3.
+AList - a list management application.  You may create multiple separate lists and customize each one separately. Especially awesome for grocery lists where you can enter grocery store item location information and display your list by location (e.g.: ketchup on Aisle 3).

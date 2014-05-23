@@ -7,18 +7,18 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 
 import com.lbconsulting.alist.database.ListsTable;
-import com.lbconsulting.alist.ui.fragments.ColorsPreviewFragment;
+import com.lbconsulting.alist.ui.fragments.ListColorsPreviewFragment;
 import com.lbconsulting.alist.utilities.MyLog;
 
 //FragmentStatePagerAdapter
 //FragmentPagerAdapter
-public class ColorsPreviewPagerAdapter extends FragmentStatePagerAdapter {
+public class ListColorsPreviewPagerAdapter extends FragmentStatePagerAdapter {
 
 	private Cursor mAllListsCursor;
 	private Context mContext;
 	private int mCount;
 
-	public ColorsPreviewPagerAdapter(FragmentManager fm, Context context) {
+	public ListColorsPreviewPagerAdapter(FragmentManager fm, Context context) {
 		super(fm);
 		this.mContext = context;
 		setAllListsCursor();
@@ -28,7 +28,7 @@ public class ColorsPreviewPagerAdapter extends FragmentStatePagerAdapter {
 	public Fragment getItem(int position) {
 		long listID = getlistID(position);
 		MyLog.d("ColorsPreviewPagerAdapter", "getItem - position=" + position + "; listID=" + listID);
-		Fragment newColorsPreviewFragment = ColorsPreviewFragment.newInstance(listID);
+		Fragment newColorsPreviewFragment = ListColorsPreviewFragment.newInstance(listID);
 		return newColorsPreviewFragment;
 	}
 

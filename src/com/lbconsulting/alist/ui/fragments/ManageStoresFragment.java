@@ -15,7 +15,7 @@ import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.database.StoresTable;
 import com.lbconsulting.alist.utilities.MyLog;
 
-public class StoresFragment extends Fragment {
+public class ManageStoresFragment extends Fragment {
 
 	private long mActiveListID = -1;
 	private long mActiveStoreID = -1;
@@ -33,13 +33,13 @@ public class StoresFragment extends Fragment {
 	private EditText txtPhoneNumber;
 	private Button btnApplyStoreChanges;
 
-	public static StoresFragment newInstance(long listID, long newStoreID) {
+	public static ManageStoresFragment newInstance(long listID, long newStoreID) {
 		if (listID < 2) {
 			MyLog.e("StoresFragment: newInstance; listID = " + listID, " is less than 2!!!!");
 			return null;
 
 		} else {
-			StoresFragment f = new StoresFragment();
+			ManageStoresFragment f = new ManageStoresFragment();
 			// Supply listID and newStoreID input as arguments.
 			Bundle args = new Bundle();
 			args.putLong("listID", listID);

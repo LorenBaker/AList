@@ -17,7 +17,7 @@
 		android:label="@string/app_name"
 		android:theme="@style/AppTheme" >
 		<activity
-			android:name="com.lbconsulting.alist.ui.ListsActivity"
+			android:name="com.lbconsulting.alist.ui.activities.ListsActivity"
 			android:label="@string/app_name" >
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />
@@ -26,60 +26,60 @@
 			</intent-filter>
 		</activity>
 		<activity
-			android:name="com.lbconsulting.alist.ui.AboutActivity"
+			android:name="com.lbconsulting.alist.ui.activities.AboutActivity"
 			android:label="@string/app_name"
-			android:parentActivityName="com.lbconsulting.alist.ui.ListsActivity" >
+			android:parentActivityName="com.lbconsulting.alist.ui.activities.ListsActivity" >
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.lbconsulting.alist.ui.ListsActivity" />
+				android:value="com.lbconsulting.alist.ui.activities.ListsActivity" />
 		</activity>
 		<activity
-			android:name="com.lbconsulting.alist.ui.ColorsActivity"
+			android:name="com.lbconsulting.alist.ui.activities.ListColorsActivity"
 			android:label="@string/app_name"
-			android:parentActivityName="com.lbconsulting.alist.ui.ListPreferencesActivity" >
+			android:parentActivityName="com.lbconsulting.alist.ui.activities.ListPreferencesActivity" >
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.lbconsulting.alist.ui.ListPreferencesActivity" />
+				android:value="com.lbconsulting.alist.ui.activities.ListPreferencesActivity" />
 		</activity>
 		<activity
-			android:name="com.lbconsulting.alist.ui.CheckItemsActivity"
+			android:name="com.lbconsulting.alist.ui.activities.ManageItemsActivity"
 			android:label="@string/app_name"
-			android:parentActivityName="com.lbconsulting.alist.ui.MasterListActivity" >
+			android:parentActivityName="com.lbconsulting.alist.ui.activities.MasterListActivity" >
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.lbconsulting.alist.ui.MasterListActivity" />
+				android:value="com.lbconsulting.alist.ui.activities.MasterListActivity" />
 		</activity>
 		<activity
-			android:name="com.lbconsulting.alist.ui.ListPreferencesActivity"
+			android:name="com.lbconsulting.alist.ui.activities.ListPreferencesActivity"
 			android:label="@string/app_name"
-			android:parentActivityName="com.lbconsulting.alist.ui.ListsActivity" >
+			android:parentActivityName="com.lbconsulting.alist.ui.activities.ListsActivity" >
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.lbconsulting.alist.ui.ListsActivity" />
+				android:value="com.lbconsulting.alist.ui.activities.ListsActivity" />
 		</activity>
 		<activity
-			android:name="com.lbconsulting.alist.ui.MasterListActivity"
+			android:name="com.lbconsulting.alist.ui.activities.MasterListActivity"
 			android:label="@string/app_name"
-			android:parentActivityName="com.lbconsulting.alist.ui.ListsActivity" >
+			android:parentActivityName="com.lbconsulting.alist.ui.activities.ListsActivity" >
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.lbconsulting.alist.ui.ListsActivity" />
+				android:value="com.lbconsulting.alist.ui.activities.ListsActivity" />
 		</activity>
 		<activity
-			android:name="com.lbconsulting.alist.ui.StoresActivity"
+			android:name="com.lbconsulting.alist.ui.activities.ManageStoresActivity"
 			android:label="@string/app_name"
-			android:parentActivityName="com.lbconsulting.alist.ui.ListsActivity" >
+			android:parentActivityName="com.lbconsulting.alist.ui.activities.ListsActivity" >
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.lbconsulting.alist.ui.ManageLocationsActivity" />
+				android:value="com.lbconsulting.alist.ui.activities.ManageLocationsActivity" />
 		</activity>
 		<activity
-			android:name="com.lbconsulting.alist.ui.ManageLocationsActivity"
+			android:name="com.lbconsulting.alist.ui.activities.ManageLocationsActivity"
 			android:label="@string/app_name"
-			android:parentActivityName="com.lbconsulting.alist.ui.ListsActivity" >
+			android:parentActivityName="com.lbconsulting.alist.ui.activities.ListsActivity" >
 			<meta-data
 				android:name="android.support.PARENT_ACTIVITY"
-				android:value="com.lbconsulting.alist.ui.ListsActivity" />
+				android:value="com.lbconsulting.alist.ui.activities.ListsActivity" />
 		</activity>
 
 		<service

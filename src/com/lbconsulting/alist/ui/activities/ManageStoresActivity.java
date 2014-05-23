@@ -29,7 +29,7 @@ import com.lbconsulting.alist.dialogs.StoresDialogFragment;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
-public class StoresActivity extends FragmentActivity {
+public class ManageStoresActivity extends FragmentActivity {
 
 	private long mActiveListID = -1;
 	private long mActiveStoreID = -1;
@@ -274,7 +274,7 @@ public class StoresActivity extends FragmentActivity {
 		newFieldValues.put(ListsTable.COL_ACTIVE_STORE_ID, mActiveStoreID);
 		mListSettings.updateListsTableFieldValues(newFieldValues);
 
-		Intent intent = new Intent(this, StoresActivity.class);
+		Intent intent = new Intent(this, ManageStoresActivity.class);
 		// prohibit the back button from displaying previous version of this StoresActivity
 		intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 		intent.putExtra("ActiveListID", mActiveListID);

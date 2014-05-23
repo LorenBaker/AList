@@ -25,18 +25,18 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.lbconsulting.alist.R;
-import com.lbconsulting.alist.adapters.CheckItemsPagerAdapter;
+import com.lbconsulting.alist.adapters.ManageItemsPagerAdapter;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.ItemsTable;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.dialogs.GroupsDialogFragment;
 import com.lbconsulting.alist.dialogs.MoveCheckedItemsDialogFragment;
-import com.lbconsulting.alist.ui.fragments.CheckItemsFragment;
+import com.lbconsulting.alist.ui.fragments.ManageItemsFragment;
 import com.lbconsulting.alist.utilities.MyLog;
 
-public class CheckItemsActivity extends FragmentActivity {
+public class ManageItemsActivity extends FragmentActivity {
 
-	private CheckItemsPagerAdapter mCheckItemsPagerAdapter;
+	private ManageItemsPagerAdapter mCheckItemsPagerAdapter;
 	private ViewPager mPager;
 
 	private long mActiveListID = -1;
@@ -72,7 +72,7 @@ public class CheckItemsActivity extends FragmentActivity {
 		mActiveListPosition = storedStates.getInt("ActiveListPosition", -1);
 
 		mApplyCheckItemsTabPositionKey = String.valueOf(mActiveListID)
-				+ CheckItemsFragment.CHECK_ITEMS_TAB_BROADCAST_KEY;
+				+ ManageItemsFragment.CHECK_ITEMS_TAB_BROADCAST_KEY;
 		mItemsMovedReceiver = new BroadcastReceiver() {
 
 			@Override
@@ -80,10 +80,10 @@ public class CheckItemsActivity extends FragmentActivity {
 				if (intent.hasExtra("selectedListID")) {
 					// the new list ID has been selected ...
 					mSelectedListID = intent.getLongExtra("selectedListID", -1);
-					int numberOfItemsMoved = ItemsTable.MoveAllCheckedItemsInList(CheckItemsActivity.this,
+					int numberOfItemsMoved = ItemsTable.MoveAllCheckedItemsInList(ManageItemsActivity.this,
 							mActiveListID, mSelectedListID);
 
-					AlertDialog.Builder builder = new AlertDialog.Builder(CheckItemsActivity.this);
+					AlertDialog.Builder builder = new AlertDialog.Builder(ManageItemsActivity.this);
 					// set title
 					Resources res = getResources();
 					String numberOfCheckedItemsMoved = res.getQuantityString(R.plurals.numberOfCheckedItems,
@@ -184,19 +184,19 @@ public class CheckItemsActivity extends FragmentActivity {
 		LocalBroadcastManager.getInstance(this).registerReceiver(mItemsMovedReceiver, new IntentFilter(itemsMovedKey));
 
 		String requestCheckItemsTabPositionReceiverKey = String.valueOf(mActiveListID)
-				+ CheckItemsFragment.REQUEST_CHECK_ITEMS_TAB_POSITION_BROADCAST_KEY;
+				+ ManageItemsFragment.REQUEST_CHECK_ITEMS_TAB_POSITION_BROADCAST_KEY;
 		LocalBroadcastManager.getInstance(this).registerReceiver(mRequestCheckItemsTabPositionReceiver,
 				new IntentFilter(requestCheckItemsTabPositionReceiverKey));
 
 		String activeGroupIdReceiverKey = String.valueOf(mActiveListID)
-				+ CheckItemsFragment.ACTIVE_GROUP_ID_BROADCAST_KEY;
+				+ ManageItemsFragment.ACTIVE_GROUP_ID_BROADCAST_KEY;
 		LocalBroadcastManager.getInstance(this).registerReceiver(mActiveGroupIdReceiver,
 				new IntentFilter(activeGroupIdReceiverKey));
 
 		mAllListsCursor = ListsTable.getAllLists(this);
 		mListSettings = new ListSettings(this, mActiveListID);
 
-		mCheckItemsPagerAdapter = new CheckItemsPagerAdapter(getSupportFragmentManager(), this);
+		mCheckItemsPagerAdapter = new ManageItemsPagerAdapter(getSupportFragmentManager(), this);
 		mPager = (ViewPager) findViewById(R.id.checkItemsPager);
 		mPager.setAdapter(mCheckItemsPagerAdapter);
 		mPager.setOnPageChangeListener(new OnPageChangeListener() {
@@ -218,7 +218,7 @@ public class CheckItemsActivity extends FragmentActivity {
 				Intent applyCheckItemsTabPositionIntent = new Intent(mApplyCheckItemsTabPositionKey);
 				applyCheckItemsTabPositionIntent.putExtra("checkItemsTabPosition",
 						mCheckItemsActivitySelectedNavigationIndex);
-				LocalBroadcastManager.getInstance(CheckItemsActivity.this).sendBroadcast(
+				LocalBroadcastManager.getInstance(ManageItemsActivity.this).sendBroadcast(
 						applyCheckItemsTabPositionIntent);
 
 				// SendRestartItemsLoaderBroadCast();
@@ -232,14 +232,14 @@ public class CheckItemsActivity extends FragmentActivity {
 	private void SendApplyCheckItemsTabPositionBroadCast() {
 		Intent applyCheckItemsTabPositionIntent = new Intent(mApplyCheckItemsTabPositionKey);
 		applyCheckItemsTabPositionIntent.putExtra("checkItemsTabPosition", mCheckItemsActivitySelectedNavigationIndex);
-		LocalBroadcastManager.getInstance(CheckItemsActivity.this).sendBroadcast(applyCheckItemsTabPositionIntent);
+		LocalBroadcastManager.getInstance(ManageItemsActivity.this).sendBroadcast(applyCheckItemsTabPositionIntent);
 	}
 
 	private void SendGroupIDRequest() {
 		String requestActiveGroupIdBroadcastKey = String.valueOf(mActiveListID)
-				+ CheckItemsFragment.REQUEST_ACTIVE_GROUP_ID_BROADCAST_KEY;
+				+ ManageItemsFragment.REQUEST_ACTIVE_GROUP_ID_BROADCAST_KEY;
 		Intent requestActiveGroupIdBroadcastIntent = new Intent(requestActiveGroupIdBroadcastKey);
-		LocalBroadcastManager.getInstance(CheckItemsActivity.this).sendBroadcast(requestActiveGroupIdBroadcastIntent);
+		LocalBroadcastManager.getInstance(ManageItemsActivity.this).sendBroadcast(requestActiveGroupIdBroadcastIntent);
 	}
 
 	private void SetActiveListBroadcastReceivers() {
@@ -253,12 +253,12 @@ public class CheckItemsActivity extends FragmentActivity {
 		LocalBroadcastManager.getInstance(this).registerReceiver(mItemsMovedReceiver, new IntentFilter(itemsMovedKey));
 
 		String requestCheckItemsTabPositionReceiverKey = String.valueOf(mActiveListID)
-				+ CheckItemsFragment.REQUEST_CHECK_ITEMS_TAB_POSITION_BROADCAST_KEY;
+				+ ManageItemsFragment.REQUEST_CHECK_ITEMS_TAB_POSITION_BROADCAST_KEY;
 		LocalBroadcastManager.getInstance(this).registerReceiver(mRequestCheckItemsTabPositionReceiver,
 				new IntentFilter(requestCheckItemsTabPositionReceiverKey));
 
 		String activeGroupIdReceiverKey = String.valueOf(mActiveListID)
-				+ CheckItemsFragment.ACTIVE_GROUP_ID_BROADCAST_KEY;
+				+ ManageItemsFragment.ACTIVE_GROUP_ID_BROADCAST_KEY;
 		LocalBroadcastManager.getInstance(this).registerReceiver(mActiveGroupIdReceiver,
 				new IntentFilter(activeGroupIdReceiverKey));
 	}
@@ -437,7 +437,7 @@ public class CheckItemsActivity extends FragmentActivity {
 				mListSettings = new ListSettings(this, mActiveListID);
 
 				mApplyCheckItemsTabPositionKey = String.valueOf(mActiveListID)
-						+ CheckItemsFragment.CHECK_ITEMS_TAB_BROADCAST_KEY;
+						+ ManageItemsFragment.CHECK_ITEMS_TAB_BROADCAST_KEY;
 
 				mActiveListPosition = position;
 			} catch (Exception e) {
@@ -466,7 +466,7 @@ public class CheckItemsActivity extends FragmentActivity {
 						@Override
 						public void onClick(DialogInterface dialog, int id) {
 							// delete all checked items
-							ItemsTable.DeleteAllCheckedItemsInList(CheckItemsActivity.this, mActiveListID);
+							ItemsTable.DeleteAllCheckedItemsInList(ManageItemsActivity.this, mActiveListID);
 						}
 					})
 					.setNegativeButton(R.string.btn_no_text, new DialogInterface.OnClickListener() {
@@ -483,7 +483,7 @@ public class CheckItemsActivity extends FragmentActivity {
 			// show it
 			alertDialog.show();
 		} else {
-			AlertDialog.Builder builder = new AlertDialog.Builder(CheckItemsActivity.this);
+			AlertDialog.Builder builder = new AlertDialog.Builder(ManageItemsActivity.this);
 			// set title and message
 			builder.setTitle("Unable to delete items.");
 			builder.setMessage("No checked items available!");
@@ -506,7 +506,7 @@ public class CheckItemsActivity extends FragmentActivity {
 	}
 
 	private void ClearAllCheckedItems() {
-		ItemsTable.UnCheckAllItemsInList(CheckItemsActivity.this, mActiveListID);
+		ItemsTable.UnCheckAllItemsInList(ManageItemsActivity.this, mActiveListID);
 	}
 
 	private void MoveCheckedItems() {
@@ -525,7 +525,7 @@ public class CheckItemsActivity extends FragmentActivity {
 						MoveCheckedItemsDialogFragment.newInstance(mActiveListID, numberOfCheckedItems);
 				moveCheckedItemsDialog.show(fm, "dialog_move_checked_items");
 			} else {
-				AlertDialog.Builder builder = new AlertDialog.Builder(CheckItemsActivity.this);
+				AlertDialog.Builder builder = new AlertDialog.Builder(ManageItemsActivity.this);
 				// set title and message
 				builder.setTitle("Unable to move items.");
 				builder.setMessage("No checked items available!");
@@ -544,7 +544,7 @@ public class CheckItemsActivity extends FragmentActivity {
 				alertDialog.show();
 			}
 		} else {
-			AlertDialog.Builder builder = new AlertDialog.Builder(CheckItemsActivity.this);
+			AlertDialog.Builder builder = new AlertDialog.Builder(ManageItemsActivity.this);
 			// set title and message
 			builder.setTitle("Unable to move items.");
 			builder.setMessage("No target list available. There must be more than one list in the database before you can move items.");

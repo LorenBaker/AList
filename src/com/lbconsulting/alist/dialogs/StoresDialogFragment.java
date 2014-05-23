@@ -18,7 +18,7 @@ import android.widget.EditText;
 
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.database.StoresTable;
-import com.lbconsulting.alist.ui.activities.StoresActivity;
+import com.lbconsulting.alist.ui.activities.ManageStoresActivity;
 import com.lbconsulting.alist.utilities.MyLog;
 
 public class StoresDialogFragment extends DialogFragment {
@@ -212,7 +212,7 @@ public class StoresDialogFragment extends DialogFragment {
 
 	protected void SendRestartStoresActivityBroadcast() {
 		String restartStoresActivityKey = String.valueOf(mActiveListID)
-				+ StoresActivity.RESTART_STORES_ACTIVITY_BROADCAST_KEY;
+				+ ManageStoresActivity.RESTART_STORES_ACTIVITY_BROADCAST_KEY;
 		Intent restartStoresActivityIntent = new Intent(restartStoresActivityKey);
 		restartStoresActivityIntent.putExtra("ActiveStoreID", mActiveStoreID);
 		LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(restartStoresActivityIntent);

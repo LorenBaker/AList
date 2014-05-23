@@ -24,7 +24,7 @@ import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.utilities.MyLog;
 
-public class ColorsPreviewFragment extends Fragment {
+public class ListColorsPreviewFragment extends Fragment {
 
 	private Resources res;
 
@@ -75,7 +75,7 @@ public class ColorsPreviewFragment extends Fragment {
 	public static final int SEPARATOR_BACKGROUND_COLOR = 150;
 	public static final int SEPARATOR_TEXT_COLOR = 160;
 
-	public ColorsPreviewFragment() {
+	public ListColorsPreviewFragment() {
 		// Empty constructor
 	}
 
@@ -85,13 +85,13 @@ public class ColorsPreviewFragment extends Fragment {
 	 * @param itemID
 	 * @return ColorsPreviewFragment
 	 */
-	public static ColorsPreviewFragment newInstance(long newListID) {
+	public static ListColorsPreviewFragment newInstance(long newListID) {
 
 		if (newListID < 2) {
 			MyLog.e("ColorsPreviewFragment: newInstance; listID = " + newListID, " is less than 2!!!!");
 			return null;
 		}
-		ColorsPreviewFragment f = new ColorsPreviewFragment();
+		ListColorsPreviewFragment f = new ListColorsPreviewFragment();
 		// Supply listID input as an argument.
 		Bundle args = new Bundle();
 		args.putLong("listID", newListID);
@@ -369,27 +369,27 @@ public class ColorsPreviewFragment extends Fragment {
 
 		// Register local broadcast receivers.
 		String applyPresetColorsKey = String.valueOf(mActiveListID)
-				+ ColorsPreviewFragment.APPLY_PRESET_COLORS_BROADCAST_KEY;
+				+ ListColorsPreviewFragment.APPLY_PRESET_COLORS_BROADCAST_KEY;
 		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mApplyPresetColors,
 				new IntentFilter(applyPresetColorsKey));
 
 		String setPresetColorsKey = String.valueOf(mActiveListID)
-				+ ColorsPreviewFragment.SET_PRESET_COLORS_BROADCAST_KEY;
+				+ ListColorsPreviewFragment.SET_PRESET_COLORS_BROADCAST_KEY;
 		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mSetPresetColors,
 				new IntentFilter(setPresetColorsKey));
 
 		String setListSettingsColorsKey = String.valueOf(mActiveListID)
-				+ ColorsPreviewFragment.SET_LIST_SETTINGS_COLORS_BROADCAST_KEY;
+				+ ListColorsPreviewFragment.SET_LIST_SETTINGS_COLORS_BROADCAST_KEY;
 		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mSetListSettingsColors,
 				new IntentFilter(setListSettingsColorsKey));
 
 		String setByColorPickerKey = String.valueOf(mActiveListID)
-				+ ColorsPreviewFragment.SET_BY_COLOR_PICKER_BROADCAST_KEY;
+				+ ListColorsPreviewFragment.SET_BY_COLOR_PICKER_BROADCAST_KEY;
 		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mSetByColorPicker,
 				new IntentFilter(setByColorPickerKey));
 
 		String setViewKey = String.valueOf(mActiveListID)
-				+ ColorsPreviewFragment.SET_VIEW_BROADCAST_KEY;
+				+ ListColorsPreviewFragment.SET_VIEW_BROADCAST_KEY;
 		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mSetView,
 				new IntentFilter(setViewKey));
 

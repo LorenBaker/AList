@@ -7,7 +7,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 
 import com.lbconsulting.alist.database.StoresTable;
-import com.lbconsulting.alist.ui.fragments.StoresFragment;
+import com.lbconsulting.alist.ui.fragments.ManageStoresFragment;
 import com.lbconsulting.alist.utilities.MyLog;
 
 //FragmentPagerAdapter
@@ -32,7 +32,7 @@ public class StoresPagerAdaptor extends FragmentStatePagerAdapter {
 	public Fragment getItem(int position) {
 		long storeID = getStoreID(position);
 		MyLog.d("StoresPagerAdaptor", "getItem - position:" + position + "; storeID:" + storeID);
-		StoresFragment newStoresFragment = StoresFragment.newInstance(mActiveListID, storeID);
+		ManageStoresFragment newStoresFragment = ManageStoresFragment.newInstance(mActiveListID, storeID);
 		return newStoresFragment;
 	}
 

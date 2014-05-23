@@ -31,7 +31,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.lbconsulting.alist.R;
-import com.lbconsulting.alist.adapters.CheckItemsCursorAdaptor;
+import com.lbconsulting.alist.adapters.ManageItemsCursorAdaptor;
 import com.lbconsulting.alist.adapters.GroupsSpinnerCursorAdapter;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.GroupsTable;
@@ -41,7 +41,7 @@ import com.lbconsulting.alist.dialogs.EditItemDialogFragment;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
-public class CheckItemsFragment extends Fragment
+public class ManageItemsFragment extends Fragment
 		implements LoaderManager.LoaderCallbacks<Cursor> {
 
 	private long mActiveListID = -1;
@@ -57,7 +57,7 @@ public class CheckItemsFragment extends Fragment
 	private LoaderManager mLoaderManager = null;
 	// The callbacks through which we will interact with the LoaderManager.
 	private LoaderManager.LoaderCallbacks<Cursor> mCheckItemsFragmentCallbacks;
-	private CheckItemsCursorAdaptor mCheckItemsCursorAdaptor;
+	private ManageItemsCursorAdaptor mCheckItemsCursorAdaptor;
 	private GroupsSpinnerCursorAdapter mGroupsSpinnerCursorAdapter;
 
 	private boolean flag_FirstTimeLoadingItemDataSinceOnResume = false;
@@ -74,7 +74,7 @@ public class CheckItemsFragment extends Fragment
 	public static final int CHECK_ITEMS_TAB_CULL_MOVE_ITEMS = 0;
 	public static final int CHECK_ITEMS_TAB_SET_GROUPS = 1;
 
-	public CheckItemsFragment() {
+	public ManageItemsFragment() {
 		// Empty constructor
 	}
 
@@ -84,13 +84,13 @@ public class CheckItemsFragment extends Fragment
 	 * @param itemID
 	 * @return EditItemDialogFragment
 	 */
-	public static CheckItemsFragment newInstance(long newListID) {
+	public static ManageItemsFragment newInstance(long newListID) {
 
 		if (newListID < 2) {
 			MyLog.e("CheckItemsFragment: newInstance; listID = " + newListID, " is less than 2!!!!");
 			return null;
 		}
-		CheckItemsFragment f = new CheckItemsFragment();
+		ManageItemsFragment f = new ManageItemsFragment();
 		// Supply listID input as an argument.
 		Bundle args = new Bundle();
 		args.putLong("listID", newListID);
@@ -151,7 +151,7 @@ public class CheckItemsFragment extends Fragment
 			@Override
 			public void onNothingSelected(AdapterView<?> arg0) {
 				String activeGroupIdReceiverKey = String.valueOf(mActiveListID)
-						+ CheckItemsFragment.ACTIVE_GROUP_ID_BROADCAST_KEY;
+						+ ManageItemsFragment.ACTIVE_GROUP_ID_BROADCAST_KEY;
 				Intent activeGroupIdReceiverIntent = new Intent(activeGroupIdReceiverKey);
 				activeGroupIdReceiverIntent.putExtra("ActiveGroupID", -1);
 				LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(activeGroupIdReceiverIntent);
@@ -168,7 +168,7 @@ public class CheckItemsFragment extends Fragment
 			}
 		});
 
-		mCheckItemsCursorAdaptor = new CheckItemsCursorAdaptor(getActivity(), null, 0, mListSettings);
+		mCheckItemsCursorAdaptor = new ManageItemsCursorAdaptor(getActivity(), null, 0, mListSettings);
 		itemsListView = (ListView) view.findViewById(R.id.itemsListView);
 		itemsListView.setAdapter(mCheckItemsCursorAdaptor);
 
@@ -208,7 +208,7 @@ public class CheckItemsFragment extends Fragment
 
 	protected void SendActiveGroupID() {
 		String activeGroupIdReceiverKey = String.valueOf(mActiveListID)
-				+ CheckItemsFragment.ACTIVE_GROUP_ID_BROADCAST_KEY;
+				+ ManageItemsFragment.ACTIVE_GROUP_ID_BROADCAST_KEY;
 		Intent activeGroupIdReceiverIntent = new Intent(activeGroupIdReceiverKey);
 		activeGroupIdReceiverIntent.putExtra("ActiveGroupID", spinGroups.getSelectedItemId());
 		LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(activeGroupIdReceiverIntent);
@@ -227,7 +227,7 @@ public class CheckItemsFragment extends Fragment
 
 	private void RequestCheckItemsTabPosition() {
 		String requestCheckItemsTabPositionReceiverKey = String.valueOf(mActiveListID)
-				+ CheckItemsFragment.REQUEST_CHECK_ITEMS_TAB_POSITION_BROADCAST_KEY;
+				+ ManageItemsFragment.REQUEST_CHECK_ITEMS_TAB_POSITION_BROADCAST_KEY;
 		Intent requestCheckItemsTabPositionIntent = new Intent(requestCheckItemsTabPositionReceiverKey);
 		LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(requestCheckItemsTabPositionIntent);
 	}

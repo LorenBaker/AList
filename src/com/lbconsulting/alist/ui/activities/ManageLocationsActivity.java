@@ -310,7 +310,7 @@ public class ManageLocationsActivity extends FragmentActivity {
 	}
 
 	private void StartStoresActivity() {
-		Intent intent = new Intent(this, StoresActivity.class);
+		Intent intent = new Intent(this, ManageStoresActivity.class);
 		intent.putExtra("ActiveListID", mActiveListID);
 		startActivity(intent);
 	}
