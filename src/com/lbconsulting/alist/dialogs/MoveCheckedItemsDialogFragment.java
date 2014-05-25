@@ -3,7 +3,6 @@ package com.lbconsulting.alist.dialogs;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
@@ -12,7 +11,6 @@ import android.support.v4.app.DialogFragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -23,9 +21,11 @@ import android.widget.TextView;
 
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.MoveItemListsSpinnerCursorAdapter;
-import com.lbconsulting.alist.database.ItemsTable;
+import com.lbconsulting.alist.classes.AListEvents.ListTargetSelected;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.utilities.MyLog;
+
+import de.greenrobot.event.EventBus;
 
 public class MoveCheckedItemsDialogFragment extends DialogFragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
@@ -103,10 +103,7 @@ public class MoveCheckedItemsDialogFragment extends DialogFragment implements Lo
 			@Override
 			public void onClick(View v) {
 				long selectedListID = spinLists.getSelectedItemId();
-				String key = String.valueOf(mActiveListID) + ItemsTable.ITEM_MOVE_BROADCAST_KEY;
-				Intent intent = new Intent(key);
-				intent.putExtra("selectedListID", selectedListID);
-				LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
+				EventBus.getDefault().post(new ListTargetSelected(selectedListID));
 				getDialog().dismiss();
 			}
 		});
@@ -129,8 +126,6 @@ public class MoveCheckedItemsDialogFragment extends DialogFragment implements Lo
 		sb.append("Move ");
 		sb.append(numberOfCheckedItemsFound);
 		sb.append("?");
-		/*sb.append(System.getProperty("line.separator"));*/
-		// sb.append(" Please select target the list.");
 		getDialog().setTitle(sb.toString());
 		return view;
 	}

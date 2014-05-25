@@ -1,10 +1,7 @@
 package com.lbconsulting.alist.ui.activities;
 
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -12,7 +9,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.Menu;
@@ -22,12 +18,15 @@ import android.widget.Toast;
 
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.StoresPagerAdaptor;
+import com.lbconsulting.alist.classes.AListEvents.RestartStoresActivity;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.database.StoresTable;
 import com.lbconsulting.alist.dialogs.StoresDialogFragment;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
+
+import de.greenrobot.event.EventBus;
 
 public class ManageStoresActivity extends FragmentActivity {
 
@@ -41,14 +40,12 @@ public class ManageStoresActivity extends FragmentActivity {
 	private ViewPager mPager;
 	private Cursor mAllStoresCursor;
 
-	private BroadcastReceiver mRestartStoresActivityReceiver;
-	public static final String RESTART_STORES_ACTIVITY_BROADCAST_KEY = "restartStoresActivityBroadcastKey";
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		MyLog.i("Stores_ACTIVITY", "onCreate");
 		super.onCreate(savedInstanceState);
 
+		EventBus.getDefault().register(this);
 		setContentView(R.layout.activity_stores_pager);
 		mPager = (ViewPager) findViewById(R.id.storesPager);
 		if (mPager == null) {
@@ -70,20 +67,6 @@ public class ManageStoresActivity extends FragmentActivity {
 			tvListTitle.setTextColor(mListSettings.getTitleTextColor());
 		}
 
-		mRestartStoresActivityReceiver = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent restartIntent) {
-				mActiveStoreID = restartIntent.getLongExtra("ActiveStoreID", -1);
-				RestartStoresActivity();
-			}
-		};
-
-		// Register local broadcast receivers.
-		String restartStoresActivityKey = String.valueOf(mActiveListID) + RESTART_STORES_ACTIVITY_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(this).registerReceiver(mRestartStoresActivityReceiver,
-				new IntentFilter(restartStoresActivityKey));
-
 		SetStoresPagerAdaptor();
 
 		mPager.setOnPageChangeListener(new OnPageChangeListener() {
@@ -104,6 +87,11 @@ public class ManageStoresActivity extends FragmentActivity {
 
 			}
 		});
+	}
+
+	public void onEvent(RestartStoresActivity event) {
+		mActiveStoreID = event.getStoreID();
+		RestartStoresActivity();
 	}
 
 	private void SetStoresPagerAdaptor() {
@@ -285,7 +273,7 @@ public class ManageStoresActivity extends FragmentActivity {
 	protected void onDestroy() {
 		MyLog.i("Stores_ACTIVITY", "onDestroy");
 		// Unregister since the activity is about to be closed.
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(mRestartStoresActivityReceiver);
+		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}
 

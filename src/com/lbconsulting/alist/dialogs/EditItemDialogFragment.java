@@ -29,8 +29,6 @@ import com.lbconsulting.alist.utilities.MyLog;
 
 public class EditItemDialogFragment extends DialogFragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
-	// private EditItemDialogListener mFinishEditItemDialogCallback;
-
 	private EditText txtEditItemName;
 	private EditText txtEditItemNote;
 	private Spinner spinEditItemGroup;
@@ -119,12 +117,6 @@ public class EditItemDialogFragment extends DialogFragment implements LoaderMana
 				long newItemGroupID = spinEditItemGroup.getSelectedItemId();
 
 				ItemsTable.UpdateItem(getActivity(), mActiveItemID, newItemName, newItemNote, newItemGroupID);
-
-				/*				String itemChangedReceiverKey = String.valueOf(mActiveListID) + ItemsTable.ITEM_CHANGED_BROADCAST_KEY;
-								Intent intent = new Intent(itemChangedReceiverKey);
-								intent.putExtra("itemID", mActiveItemID);
-								LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);*/
-
 				getDialog().dismiss();
 			}
 		});

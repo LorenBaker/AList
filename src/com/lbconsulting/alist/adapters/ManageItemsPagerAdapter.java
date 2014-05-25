@@ -1,6 +1,7 @@
 package com.lbconsulting.alist.adapters;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -28,7 +29,11 @@ public class ManageItemsPagerAdapter extends FragmentStatePagerAdapter {
 	public Fragment getItem(int position) {
 		long listID = getlistID(position);
 		MyLog.d("CheckItemsPagerAdapter", "getItem - position=" + position + "; listID=" + listID);
-		Fragment newCheckItemsFragment = ManageItemsFragment.newInstance(listID);
+
+		SharedPreferences storedStates = mContext.getSharedPreferences("AList", Context.MODE_PRIVATE);
+		int tabPosition = storedStates.getInt("ActiveTabPosition", 0);
+
+		Fragment newCheckItemsFragment = ManageItemsFragment.newInstance(listID, tabPosition);
 		return newCheckItemsFragment;
 	}
 

@@ -2,17 +2,12 @@ package com.lbconsulting.alist.ui.fragments;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,9 +15,17 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.lbconsulting.alist.R;
+import com.lbconsulting.alist.classes.AListEvents.ActiveColorPickerViewChanged;
+import com.lbconsulting.alist.classes.AListEvents.ApplyPresetColors;
+import com.lbconsulting.alist.classes.AListEvents.ColorPickerColorChange;
+import com.lbconsulting.alist.classes.AListEvents.SetInitialColorPickerColor;
+import com.lbconsulting.alist.classes.AListEvents.SetListSettingsColors;
+import com.lbconsulting.alist.classes.AListEvents.SetPresetColors;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.utilities.MyLog;
+
+import de.greenrobot.event.EventBus;
 
 public class ListColorsPreviewFragment extends Fragment {
 
@@ -47,19 +50,6 @@ public class ListColorsPreviewFragment extends Fragment {
 	private int mSeparator_background_color;
 	private int mSeparator_text_color;
 
-	private BroadcastReceiver mApplyPresetColors;
-	private BroadcastReceiver mSetPresetColors;
-	private BroadcastReceiver mSetListSettingsColors;
-	private BroadcastReceiver mSetByColorPicker;
-	private BroadcastReceiver mSetView;
-
-	public static final String SET_BY_COLOR_PICKER_BROADCAST_KEY = "setByColorPickerBroadcastKey";
-	public static final String APPLY_PRESET_COLORS_BROADCAST_KEY = "applyPresetColorsBroadcastKey";
-	public static final String SET_LIST_SETTINGS_COLORS_BROADCAST_KEY = "setListSettingsColorsBroadcastKey";
-	public static final String SET_VIEW_BROADCAST_KEY = "setViewBroadcastKey";
-	public static final String INITIAL_COLOR_BROADCAST_KEY = "setInitialColorKey";
-
-	public static final String SET_PRESET_COLORS_BROADCAST_KEY = "setPresetColorsBroadcastKey";
 	public static final int SET_PRESET_0_COLORS = 10;
 	public static final int SET_PRESET_1_COLORS = 20;
 	public static final int SET_PRESET_2_COLORS = 30;
@@ -155,19 +145,6 @@ public class ListColorsPreviewFragment extends Fragment {
 			tvListItemSeparator = (TextView) view.findViewById(R.id.tvListItemSeparator);
 
 			setAllColors();
-
-			/*tvMasterListNotSelectedText = (TextView) view.findViewById(R.id.tvMasterListNotSelectedText);
-			if (tvMasterListNotSelectedText != null) {
-				tvMasterListNotSelectedText.setBackgroundColor(this.listSettings.getMasterListBackgroundColor());
-				tvMasterListNotSelectedText.setTextColor(this.listSettings.getMasterListItemNormalTextColor());
-			}
-
-			tvMasterListSelectedText = (TextView) view.findViewById(R.id.tvMasterListSelectedText);
-			if (tvMasterListSelectedText != null) {
-				tvMasterListSelectedText.setBackgroundColor(this.listSettings.getMasterListBackgroundColor());
-				tvMasterListSelectedText.setTextColor(this.listSettings.getMasterListItemSelectedTextColor());
-			}*/
-
 		}
 		return view;
 	}
@@ -176,223 +153,166 @@ public class ListColorsPreviewFragment extends Fragment {
 	public void onActivityCreated(Bundle savedInstanceState) {
 		MyLog.i("ColorsPreviewFragment", "onActivityCreated");
 		super.onActivityCreated(savedInstanceState);
+		EventBus.getDefault().register(this);
 		res = getActivity().getResources();
+	}
 
-		mSetView = new BroadcastReceiver() {
+	public void onEvent(ActiveColorPickerViewChanged event) {
+		if (event.getListID() == mActiveListID) {
+			mActiveViewID = event.getColorPickerViewID();
+			switch (mActiveViewID) {
 
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				if (intent.hasExtra("setViewID")) {
-					mActiveViewID = intent.getExtras().getInt("setViewID", -1);
+				case TITLE_BACKGROUND_COLOR:
+					EventBus.getDefault().post(new SetInitialColorPickerColor(mTitle_background_color));
+					break;
 
-					Intent setInitialColorIntent = new Intent(INITIAL_COLOR_BROADCAST_KEY);
-					switch (mActiveViewID) {
+				case TITLE_TEXT_COLOR:
+					EventBus.getDefault().post(new SetInitialColorPickerColor(mTitle_text_color));
+					break;
 
-						case TITLE_BACKGROUND_COLOR:
-							setInitialColorIntent.putExtra("initialColorPickerColor", mTitle_background_color);
-							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(setInitialColorIntent);
-							break;
+				case LIST_BACKGROUND_COLOR:
+					EventBus.getDefault().post(new SetInitialColorPickerColor(mList_background_color));
+					break;
 
-						case TITLE_TEXT_COLOR:
-							setInitialColorIntent.putExtra("initialColorPickerColor", mTitle_text_color);
-							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(setInitialColorIntent);
-							break;
+				case LIST_NORMAL_TEXT_COLOR:
+					EventBus.getDefault().post(new SetInitialColorPickerColor(mList_normal_text_color));
+					break;
 
-						case LIST_BACKGROUND_COLOR:
-							setInitialColorIntent.putExtra("initialColorPickerColor", mList_background_color);
-							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(setInitialColorIntent);
-							break;
+				case LIST_STRIKEOUT_TEXT_COLOR:
+					EventBus.getDefault().post(new SetInitialColorPickerColor(mList_strikeout_text_color));
+					break;
 
-						case LIST_NORMAL_TEXT_COLOR:
-							setInitialColorIntent.putExtra("initialColorPickerColor", mList_normal_text_color);
-							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(setInitialColorIntent);
-							break;
+				case SEPARATOR_BACKGROUND_COLOR:
+					EventBus.getDefault().post(new SetInitialColorPickerColor(mSeparator_background_color));
+					break;
 
-						case LIST_STRIKEOUT_TEXT_COLOR:
-							setInitialColorIntent.putExtra("initialColorPickerColor", mList_strikeout_text_color);
-							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(setInitialColorIntent);
-							break;
+				case SEPARATOR_TEXT_COLOR:
+					EventBus.getDefault().post(new SetInitialColorPickerColor(mSeparator_text_color));
+					break;
 
-						case SEPARATOR_BACKGROUND_COLOR:
-							setInitialColorIntent.putExtra("initialColorPickerColor", mSeparator_background_color);
-							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(setInitialColorIntent);
-							break;
-
-						case SEPARATOR_TEXT_COLOR:
-							setInitialColorIntent.putExtra("initialColorPickerColor", mSeparator_text_color);
-							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(setInitialColorIntent);
-							break;
-
-						default:
-							break;
-
-					}
-				}
+				default:
+					break;
 			}
-		};
+		}
+	}
 
-		mSetByColorPicker = new BroadcastReceiver() {
+	public void onEvent(SetListSettingsColors event) {
+		if (event.getListID() == mActiveListID) {
+			setListSettingsColors();
+			setAllColors();
+		}
+	}
 
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				if (intent.hasExtra("colorPickerColor")) {
+	public void onEvent(ApplyPresetColors event) {
+		if (event.getListID() == mActiveListID) {
+			applyColorsToListSettings();
 
-					switch (mActiveViewID) {
+			AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+			// set title
+			builder.setTitle(R.string.dialog_title_colors_applied);
 
-						case TITLE_BACKGROUND_COLOR:
-							mTitle_background_color = intent.getExtras().getInt("colorPickerColor", -1);
-							setTitleBackgroundColor();
-							break;
+			String msg = "Colors for " + "\"" + mListSettings.getListTitle() + "\" saved.";
+			// set dialog message
+			builder
+					.setMessage(msg)
+					.setCancelable(false)
+					.setPositiveButton(R.string.btn_ok_text, new DialogInterface.OnClickListener() {
 
-						case TITLE_TEXT_COLOR:
-							mTitle_text_color = intent.getExtras().getInt("colorPickerColor", -1);
-							setTitleTextColor();
-							break;
+						public void onClick(DialogInterface dialog, int id) {
+							// do nothing
+						}
+					});
+			// create alert dialog
+			AlertDialog alertDialog = builder.create();
+			alertDialog.show();
+		}
+	}
 
-						case LIST_BACKGROUND_COLOR:
-							mList_background_color = intent.getExtras().getInt("colorPickerColor", -1);
-							setPreviewFragmentLinearLayoutBackgroundColor();
-							setListBackgroundColor();
-							break;
+	public void onEvent(SetPresetColors event) {
+		if (event.getListID() == mActiveListID) {
+			int presetcolorValue = event.getPresetcolorValue();
+			switch (presetcolorValue) {
 
-						case LIST_NORMAL_TEXT_COLOR:
-							mList_normal_text_color = intent.getExtras().getInt("colorPickerColor", -1);
-							setItemNormalTextColor();
-							break;
+				case SET_PRESET_0_COLORS:
+					setPreset0colors();
+					setAllColors();
+					break;
 
-						case LIST_STRIKEOUT_TEXT_COLOR:
-							mList_strikeout_text_color = intent.getExtras().getInt("colorPickerColor", -1);
-							setItemStrikeoutTextColor();
-							break;
+				case SET_PRESET_1_COLORS:
+					setPreset1colors();
+					setAllColors();
+					break;
 
-						case SEPARATOR_BACKGROUND_COLOR:
-							mSeparator_background_color = intent.getExtras().getInt("colorPickerColor", -1);
-							setSeparatorBackgroundColor();
-							break;
+				case SET_PRESET_2_COLORS:
+					setPreset2colors();
+					setAllColors();
+					break;
 
-						case SEPARATOR_TEXT_COLOR:
-							mSeparator_text_color = intent.getExtras().getInt("colorPickerColor", -1);
-							setSeparatorTextColor();
-							break;
+				case SET_PRESET_3_COLORS:
+					setPreset3colors();
+					setAllColors();
+					break;
 
-						default:
-							break;
+				case SET_PRESET_4_COLORS:
+					setPreset4colors();
+					setAllColors();
+					break;
 
-					}
-				}
+				case SET_PRESET_5_COLORS:
+					setPreset5colors();
+					setAllColors();
+					break;
+
+				default:
+					break;
 			}
-		};
+		}
+	}
 
-		mSetListSettingsColors = new BroadcastReceiver() {
+	public void onEvent(ColorPickerColorChange event) {
+		if (event.getListID() == mActiveListID) {
+			switch (mActiveViewID) {
 
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				setListSettingsColors();
-				setAllColors();
+				case TITLE_BACKGROUND_COLOR:
+					mTitle_background_color = event.getColorPickerColor();
+					setTitleBackgroundColor();
+					break;
+
+				case TITLE_TEXT_COLOR:
+					mTitle_text_color = event.getColorPickerColor();
+					setTitleTextColor();
+					break;
+
+				case LIST_BACKGROUND_COLOR:
+					mList_background_color = event.getColorPickerColor();
+					setPreviewFragmentLinearLayoutBackgroundColor();
+					setListBackgroundColor();
+					break;
+
+				case LIST_NORMAL_TEXT_COLOR:
+					mList_normal_text_color = event.getColorPickerColor();
+					setItemNormalTextColor();
+					break;
+
+				case LIST_STRIKEOUT_TEXT_COLOR:
+					mList_strikeout_text_color = event.getColorPickerColor();
+					setItemStrikeoutTextColor();
+					break;
+
+				case SEPARATOR_BACKGROUND_COLOR:
+					mSeparator_background_color = event.getColorPickerColor();
+					setSeparatorBackgroundColor();
+					break;
+
+				case SEPARATOR_TEXT_COLOR:
+					mSeparator_text_color = event.getColorPickerColor();
+					setSeparatorTextColor();
+					break;
+
+				default:
+					break;
 			}
-
-		};
-
-		mApplyPresetColors = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				applyColorsToListSettings();
-
-				AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-				// set title
-				builder.setTitle(R.string.dialog_title_colors_applied);
-
-				String msg = "Colors for " + "\"" + mListSettings.getListTitle() + "\" saved.";
-				// set dialog message
-				builder
-						.setMessage(msg)
-						.setCancelable(false)
-						.setPositiveButton(R.string.btn_ok_text, new DialogInterface.OnClickListener() {
-
-							public void onClick(DialogInterface dialog, int id) {
-								// do nothing
-							}
-						});
-				// create alert dialog
-				AlertDialog alertDialog = builder.create();
-				// show it
-				alertDialog.show();
-			}
-		};
-
-		mSetPresetColors = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				// set colors to a color preset
-				if (intent.hasExtra("setPresetColors")) {
-					int presetcolorValue = intent.getExtras().getInt("setPresetColors", -1);
-					switch (presetcolorValue) {
-
-						case SET_PRESET_0_COLORS:
-							setPreset0colors();
-							setAllColors();
-							break;
-
-						case SET_PRESET_1_COLORS:
-							setPreset1colors();
-							setAllColors();
-							break;
-
-						case SET_PRESET_2_COLORS:
-							setPreset2colors();
-							setAllColors();
-							break;
-
-						case SET_PRESET_3_COLORS:
-							setPreset3colors();
-							setAllColors();
-							break;
-
-						case SET_PRESET_4_COLORS:
-							setPreset4colors();
-							setAllColors();
-							break;
-
-						case SET_PRESET_5_COLORS:
-							setPreset5colors();
-							setAllColors();
-							break;
-
-						default:
-							break;
-					}
-				}
-			}
-		};
-
-		// Register local broadcast receivers.
-		String applyPresetColorsKey = String.valueOf(mActiveListID)
-				+ ListColorsPreviewFragment.APPLY_PRESET_COLORS_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mApplyPresetColors,
-				new IntentFilter(applyPresetColorsKey));
-
-		String setPresetColorsKey = String.valueOf(mActiveListID)
-				+ ListColorsPreviewFragment.SET_PRESET_COLORS_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mSetPresetColors,
-				new IntentFilter(setPresetColorsKey));
-
-		String setListSettingsColorsKey = String.valueOf(mActiveListID)
-				+ ListColorsPreviewFragment.SET_LIST_SETTINGS_COLORS_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mSetListSettingsColors,
-				new IntentFilter(setListSettingsColorsKey));
-
-		String setByColorPickerKey = String.valueOf(mActiveListID)
-				+ ListColorsPreviewFragment.SET_BY_COLOR_PICKER_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mSetByColorPicker,
-				new IntentFilter(setByColorPickerKey));
-
-		String setViewKey = String.valueOf(mActiveListID)
-				+ ListColorsPreviewFragment.SET_VIEW_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mSetView,
-				new IntentFilter(setViewKey));
-
+		}
 	}
 
 	@Override
@@ -434,12 +354,7 @@ public class ListColorsPreviewFragment extends Fragment {
 	@Override
 	public void onDestroy() {
 		MyLog.i("ColorsPreviewFragment", "onDestroy");
-		// Unregister local broadcast receivers
-		LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mApplyPresetColors);
-		LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mSetPresetColors);
-		LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mSetListSettingsColors);
-		LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mSetByColorPicker);
-		LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mSetView);
+		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}
 

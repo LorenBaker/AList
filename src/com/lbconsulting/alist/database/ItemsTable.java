@@ -88,8 +88,7 @@ public class ItemsTable {
 	public static final String SORT_ORDER_LAST_USED = COL_DATE_TIME_LAST_USED + " DESC, " + SORT_ORDER_ITEM_NAME;
 	public static final String SORT_ORDER_MANUAL = COL_MANUAL_SORT_ORDER + " ASC";
 
-	public static final String ITEM_MOVE_BROADCAST_KEY = "itemMoved";
-	public static final String ITEM_CHANGED_BROADCAST_KEY = "itemChanged";
+	// public static final String ITEM_MOVE_BROADCAST_KEY = "itemMoved";
 
 	// TODO: SORT by group name not id!
 	// public static final String SORT_ORDER_BY_GROUP = COL_GROUP_ID + " ASC, "
@@ -972,7 +971,7 @@ public class ItemsTable {
 		return numberOfUpdatedRecords;
 	}
 
-	public static int ApplyGroupToCheckedItems(Context context, long listID, long groupID) {
+	public static int ApplyGroupToManageItems(Context context, long listID, long groupID) {
 		int numberOfUpdatedRecords = -1;
 		if (listID > 1) {
 			try {
@@ -986,7 +985,7 @@ public class ItemsTable {
 				values.put(COL_CHECKED, CHECKED_FALSE);
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in ApplyGroupToCheckedItems. ", e.toString());
+				MyLog.e("Exception error in ApplyGroupToManageItems. ", e.toString());
 			}
 		}
 		return numberOfUpdatedRecords;

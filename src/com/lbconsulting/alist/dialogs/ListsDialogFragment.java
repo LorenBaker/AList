@@ -8,11 +8,9 @@ import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -28,6 +26,8 @@ import android.widget.ProgressBar;
 import android.widget.Spinner;
 
 import com.lbconsulting.alist.R;
+import com.lbconsulting.alist.classes.AListEvents.ListTitleChanged;
+import com.lbconsulting.alist.classes.AListEvents.NewListCreated;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.AListContentProvider;
 import com.lbconsulting.alist.database.BridgeTable;
@@ -36,13 +36,12 @@ import com.lbconsulting.alist.database.ItemsTable;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.database.LocationsTable;
 import com.lbconsulting.alist.database.StoresTable;
-import com.lbconsulting.alist.ui.fragments.ListPreferencesFragment;
 import com.lbconsulting.alist.utilities.MyLog;
+
+import de.greenrobot.event.EventBus;
 
 public class ListsDialogFragment extends DialogFragment {
 
-	public static final int LIST_SORT_ORDER = 10;
-	public static final int MASTER_LIST_SORT_ORDER = 20;
 	public static final int EDIT_LIST_TITLE = 30;
 	public static final int NEW_LIST = 40;
 
@@ -127,17 +126,6 @@ public class ListsDialogFragment extends DialogFragment {
 		// inflate view
 		View view = null;
 		switch (mDialogType) {
-			case LIST_SORT_ORDER:
-				MyLog.i("ListsDialogFragment", "onCreateView: List Sort Order");
-				view = inflater.inflate(R.layout.dialog_list_sort_order, container);
-				getDialog().setTitle(R.string.dialog_title_list_sort_order);
-				break;
-
-			case MASTER_LIST_SORT_ORDER:
-				MyLog.i("ListsDialogFragment", "onCreateView: Master List Sort Order");
-				view = inflater.inflate(R.layout.dialog_master_list_sort_order, container);
-				getDialog().setTitle(R.string.dialog_title_master_list_sort_order);
-				break;
 
 			case EDIT_LIST_TITLE:
 				MyLog.i("ListsDialogFragment", "onCreateView: Edit List Title");
@@ -162,34 +150,14 @@ public class ListsDialogFragment extends DialogFragment {
 				@Override
 				public void onClick(View v) {
 					ContentValues newFieldValues = new ContentValues();
-					String key = String.valueOf(mActiveListID)
-							+ ListPreferencesFragment.LIST_PREFERENCES_CHANGED_BROADCAST_KEY;
-					Intent intent = new Intent(key);
-					intent.putExtra("listID", mActiveListID);
 					switch (mDialogType) {
-						case LIST_SORT_ORDER:
-							newFieldValues.put(ListsTable.COL_LIST_SORT_ORDER, mSortOrderResult);
-							mListSettings.updateListsTableFieldValues(newFieldValues);
-							intent.putExtra("newListSortOrder", mSortOrderResult);
-							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
-							getDialog().dismiss();
-							break;
-
-						case MASTER_LIST_SORT_ORDER:
-							newFieldValues.put(ListsTable.COL_MASTER_LIST_SORT_ORDER, mSortOrderResult);
-							mListSettings.updateListsTableFieldValues(newFieldValues);
-							intent.putExtra("newMasterListSortOrder", mSortOrderResult);
-							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
-							getDialog().dismiss();
-							break;
 
 						case EDIT_LIST_TITLE:
 							String newListTitle = txtEditListTitle.getText().toString();
 							newListTitle = newListTitle.trim();
 							newFieldValues.put(ListsTable.COL_LIST_TITLE, newListTitle);
 							mListSettings.updateListsTableFieldValues(newFieldValues);
-							intent.putExtra("editedListTitle", newListTitle);
-							LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
+							EventBus.getDefault().post(new ListTitleChanged(mActiveListID, newListTitle));
 							getDialog().dismiss();
 							break;
 
@@ -202,8 +170,7 @@ public class ListsDialogFragment extends DialogFragment {
 								if (newListID > 0) {
 									switch (spinListTemplate.getSelectedItemPosition()) {
 										case BLANK_LIST_TEMPLATE:
-											intent.putExtra("newListID", newListID);
-											LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
+											EventBus.getDefault().post(new NewListCreated(newListID));
 											getDialog().dismiss();
 											break;
 
@@ -213,8 +180,7 @@ public class ListsDialogFragment extends DialogFragment {
 
 										case TO_DO_LIST_TEMPLATE:
 											FillToDoList(newListID);
-											intent.putExtra("newListID", newListID);
-											LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
+											EventBus.getDefault().post(new NewListCreated(newListID));
 											getDialog().dismiss();
 											break;
 
@@ -331,11 +297,6 @@ public class ListsDialogFragment extends DialogFragment {
 
 		mActiveListID = todosListID;
 		AListContentProvider.SuppressChangeNotification(false);
-
-		/*		ContentValues newFieldValues = new ContentValues();
-				newFieldValues.put(ListsTable.COL_LIST_SORT_ORDER, AListUtilities.LIST_SORT_MANUAL);
-				ListsTable.UpdateListsTableFieldValues(getActivity(), mActiveListID, newFieldValues);*/
-
 	}
 
 	private void fillSpinListTemplate() {
@@ -453,11 +414,7 @@ public class ListsDialogFragment extends DialogFragment {
 
 		@Override
 		protected void onPostExecute(Long newListID) {
-			String key = String.valueOf(mActiveListID)
-					+ ListPreferencesFragment.LIST_PREFERENCES_CHANGED_BROADCAST_KEY;
-			Intent intent = new Intent(key);
-			intent.putExtra("newListID", newListID);
-			LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intent);
+			EventBus.getDefault().post(new NewListCreated(newListID));
 			getDialog().dismiss();
 		}
 

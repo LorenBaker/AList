@@ -1,13 +1,9 @@
 package com.lbconsulting.alist.adapters;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.database.Cursor;
 import android.graphics.Paint;
 import android.graphics.Typeface;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.CursorAdapter;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,45 +11,55 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.lbconsulting.alist.R;
+import com.lbconsulting.alist.classes.AListEvents.ApplyPresetColors;
 import com.lbconsulting.alist.classes.DynamicListView;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.BridgeTable;
 import com.lbconsulting.alist.database.GroupsTable;
 import com.lbconsulting.alist.database.ItemsTable;
 import com.lbconsulting.alist.database.LocationsTable;
-import com.lbconsulting.alist.ui.fragments.ListColorsPreviewFragment;
 import com.lbconsulting.alist.utilities.MyLog;
+
+import de.greenrobot.event.EventBus;
 
 public class ItemsCursorAdaptor extends CursorAdapter implements DynamicListView.SwappableListAdapter {
 
 	private ListSettings mListSettings;
 	private final int INVALID_ID = -1;
-	private BroadcastReceiver mListColorsChanged;
+	// private BroadcastReceiver mListColorsChanged;
 
-	private Context mContext;
+	private Context mContext1;
 
 	public ItemsCursorAdaptor(Context context1, Cursor c, int flags, ListSettings listSettings) {
 		super(context1, c, flags);
 		this.mListSettings = listSettings;
-		this.mContext = context1;
+		this.mContext1 = context1;
 		MyLog.i("ItemsCursorAdaptor", "ItemsCursorAdaptor constructor.");
+		EventBus.getDefault().register(this);
 
-		mListColorsChanged = new BroadcastReceiver() {
+		/*		mListColorsChanged = new BroadcastReceiver() {
 
-			@Override
-			public void onReceive(Context context2, Intent intent) {
-				mListSettings.RefreshListSettings();
-			}
-		};
+					@Override
+					public void onReceive(Context context2, Intent intent) {
+						mListSettings.RefreshListSettings();
+					}
+				};*/
 		// Register to receive messages.
-		String key = String.valueOf(mListSettings.getListID())
-				+ ListColorsPreviewFragment.APPLY_PRESET_COLORS_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(context1).registerReceiver(mListColorsChanged, new IntentFilter(key));
+		/*		String key = String.valueOf(mListSettings.getListID())
+						+ ListColorsPreviewFragment.APPLY_PRESET_COLORS_BROADCAST_KEY;
+				LocalBroadcastManager.getInstance(context1).registerReceiver(mListColorsChanged, new IntentFilter(key));*/
+	}
+
+	public void onEvent(ApplyPresetColors event) {
+		if (mListSettings.getListID() == event.getListID()) {
+			mListSettings.RefreshListSettings();
+		}
 	}
 
 	@Override
 	protected void finalize() throws Throwable {
-		LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mListColorsChanged);
+		EventBus.getDefault().unregister(this);
+		// LocalBroadcastManager.getInstance(mContext).unregisterReceiver(mListColorsChanged);
 		super.finalize();
 	}
 
@@ -254,7 +260,7 @@ public class ItemsCursorAdaptor extends CursorAdapter implements DynamicListView
 
 	@Override
 	public void swap(long mobileItemID, long switchItemID, long previousSwitchItemID) {
-		ItemsTable.SwapManualSortOrder(mContext, mobileItemID, switchItemID, previousSwitchItemID);
+		ItemsTable.SwapManualSortOrder(mContext1, mobileItemID, switchItemID, previousSwitchItemID);
 	}
 
 }

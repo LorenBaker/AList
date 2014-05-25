@@ -1,11 +1,9 @@
 package com.lbconsulting.alist.ui.fragments;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
@@ -15,7 +13,6 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -31,8 +28,10 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.lbconsulting.alist.R;
-import com.lbconsulting.alist.adapters.ManageItemsCursorAdaptor;
 import com.lbconsulting.alist.adapters.GroupsSpinnerCursorAdapter;
+import com.lbconsulting.alist.adapters.ManageItemsCursorAdaptor;
+import com.lbconsulting.alist.classes.AListEvents.ManageItemsActiveGroupChanged;
+import com.lbconsulting.alist.classes.AListEvents.ManageItemsTabPostionChange;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.GroupsTable;
 import com.lbconsulting.alist.database.ItemsTable;
@@ -41,11 +40,12 @@ import com.lbconsulting.alist.dialogs.EditItemDialogFragment;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
-public class ManageItemsFragment extends Fragment
-		implements LoaderManager.LoaderCallbacks<Cursor> {
+import de.greenrobot.event.EventBus;
+
+public class ManageItemsFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
 	private long mActiveListID = -1;
-
+	private int mActiveTabPosition;
 	private ListSettings mListSettings;
 
 	private TextView tvListTitle;
@@ -56,23 +56,14 @@ public class ManageItemsFragment extends Fragment
 
 	private LoaderManager mLoaderManager = null;
 	// The callbacks through which we will interact with the LoaderManager.
-	private LoaderManager.LoaderCallbacks<Cursor> mCheckItemsFragmentCallbacks;
-	private ManageItemsCursorAdaptor mCheckItemsCursorAdaptor;
+	private LoaderManager.LoaderCallbacks<Cursor> mManageItemsFragmentCallbacks;
+	private ManageItemsCursorAdaptor mManageItemsCursorAdaptor;
 	private GroupsSpinnerCursorAdapter mGroupsSpinnerCursorAdapter;
 
 	private boolean flag_FirstTimeLoadingItemDataSinceOnResume = false;
 
-	public static final String REQUEST_CHECK_ITEMS_TAB_POSITION_BROADCAST_KEY = "requestCheckItemsTabPosition";
-	public static final String CHECK_ITEMS_TAB_BROADCAST_KEY = "CheckItemsTabBroadcastKey";
-
-	public static final String ACTIVE_GROUP_ID_BROADCAST_KEY = "activeGroupIdBroadcastKey";
-	public static final String REQUEST_ACTIVE_GROUP_ID_BROADCAST_KEY = "requestActiveGroupIdBroadcastKey";
-
-	private BroadcastReceiver mCheckItemsTabBroadcastReceiver;
-	private BroadcastReceiver mRequestActiveGroupIdBroadcastReceiver;
-
-	public static final int CHECK_ITEMS_TAB_CULL_MOVE_ITEMS = 0;
-	public static final int CHECK_ITEMS_TAB_SET_GROUPS = 1;
+	public static final int TAB_CULL_MOVE_ITEMS = 0;
+	public static final int TAB_SET_GROUPS = 1;
 
 	public ManageItemsFragment() {
 		// Empty constructor
@@ -84,16 +75,16 @@ public class ManageItemsFragment extends Fragment
 	 * @param itemID
 	 * @return EditItemDialogFragment
 	 */
-	public static ManageItemsFragment newInstance(long newListID) {
+	public static ManageItemsFragment newInstance(long listID, int tabPosition) {
 
-		if (newListID < 2) {
-			MyLog.e("CheckItemsFragment: newInstance; listID = " + newListID, " is less than 2!!!!");
+		if (listID < 2) {
+			MyLog.e("ManageItemsFragment: newInstance; listID = " + listID, " is less than 2!!!!");
 			return null;
 		}
 		ManageItemsFragment f = new ManageItemsFragment();
-		// Supply listID input as an argument.
 		Bundle args = new Bundle();
-		args.putLong("listID", newListID);
+		args.putLong("listID", listID);
+		args.putLong("ActiveTabPosition", tabPosition);
 		f.setArguments(args);
 		return f;
 	}
@@ -101,35 +92,39 @@ public class ManageItemsFragment extends Fragment
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
-		MyLog.i("CheckItemsFragment", "onAttach");
+		MyLog.i("ManageItemsFragment", "onAttach() listID:" + mActiveListID);
 	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		MyLog.i("CheckItemsFragment", "onCreate");
+		MyLog.i("ManageItemsFragment", "onCreate() listID:" + mActiveListID);
 	}
 
 	@Override
 	public void onSaveInstanceState(Bundle outState) {
-		// Store our listID
 		outState.putLong("listID", this.mActiveListID);
+		outState.putLong("ActiveTabPosition", this.mActiveTabPosition);
 		super.onSaveInstanceState(outState);
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		MyLog.i("CheckItemsFragment", "onCreateView");
+		MyLog.i("ManageItemsFragment", "onCreateView() listID:" + mActiveListID);
 
 		if (savedInstanceState != null && savedInstanceState.containsKey("listID")) {
 			mActiveListID = savedInstanceState.getLong("listID", 0);
 		} else {
 			Bundle bundle = getArguments();
-			if (bundle != null)
+			if (bundle != null) {
 				mActiveListID = bundle.getLong("listID", 0);
+			}
 		}
 
-		View view = inflater.inflate(R.layout.frag_check_items, container, false);
+		SharedPreferences storedStates = getActivity().getSharedPreferences("AList", Context.MODE_PRIVATE);
+		mActiveTabPosition = storedStates.getInt("ActiveTabPosition", 0);
+
+		View view = inflater.inflate(R.layout.frag_manage_items, container, false);
 
 		mListSettings = new ListSettings(getActivity(), mActiveListID);
 
@@ -144,17 +139,18 @@ public class ManageItemsFragment extends Fragment
 		spinGroups.setOnItemSelectedListener(new OnItemSelectedListener() {
 
 			@Override
-			public void onItemSelected(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-				SendActiveGroupID();
+			public void onItemSelected(AdapterView<?> arg0, View arg1, int postion, long groupID) {
+				ContentValues newFieldValues = new ContentValues();
+				newFieldValues.put(ListsTable.COL_MANAGE_ITEMS_GROUP_ID, groupID);
+				ListsTable.UpdateListsTableFieldValues(getActivity(), mActiveListID, newFieldValues);
+				mListSettings.RefreshListSettings();
+
+				EventBus.getDefault().post(new ManageItemsActiveGroupChanged(mActiveListID, groupID));
 			}
 
 			@Override
 			public void onNothingSelected(AdapterView<?> arg0) {
-				String activeGroupIdReceiverKey = String.valueOf(mActiveListID)
-						+ ManageItemsFragment.ACTIVE_GROUP_ID_BROADCAST_KEY;
-				Intent activeGroupIdReceiverIntent = new Intent(activeGroupIdReceiverKey);
-				activeGroupIdReceiverIntent.putExtra("ActiveGroupID", -1);
-				LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(activeGroupIdReceiverIntent);
+
 			}
 
 		});
@@ -164,22 +160,22 @@ public class ManageItemsFragment extends Fragment
 
 			@Override
 			public void onClick(View v) {
-				ApplyGroupsToCheckedItems();
+				ApplyGroupsToManageItems();
 			}
 		});
 
-		mCheckItemsCursorAdaptor = new ManageItemsCursorAdaptor(getActivity(), null, 0, mListSettings);
+		mManageItemsCursorAdaptor = new ManageItemsCursorAdaptor(getActivity(), null, 0, mListSettings);
 		itemsListView = (ListView) view.findViewById(R.id.itemsListView);
-		itemsListView.setAdapter(mCheckItemsCursorAdaptor);
+		itemsListView.setAdapter(mManageItemsCursorAdaptor);
 
-		mCheckItemsFragmentCallbacks = this;
+		mManageItemsFragmentCallbacks = this;
 
 		itemsListView.setOnItemClickListener(new OnItemClickListener() {
 
 			// toggle check box
 			@Override
-			public void onItemClick(AdapterView<?> parent, View onItemClickView, int position, long id) {
-				ItemsTable.ToggleCheckBox(getActivity(), id);
+			public void onItemClick(AdapterView<?> parent, View onItemClickView, int position, long itemID) {
+				ItemsTable.ToggleCheckBox(getActivity(), itemID);
 			}
 		});
 
@@ -187,8 +183,7 @@ public class ManageItemsFragment extends Fragment
 
 			// edit item dialog
 			@Override
-			public boolean onItemLongClick(AdapterView<?> parent, View onItemLongClickView, int position,
-					long activeItemID) {
+			public boolean onItemLongClick(AdapterView<?> parent, View onItemLongClickView, int position, long itemID) {
 				FragmentManager fm = getFragmentManager();
 				Fragment prev = fm.findFragmentByTag("dialog_edit_item");
 				if (prev != null) {
@@ -196,7 +191,7 @@ public class ManageItemsFragment extends Fragment
 					ft.remove(prev);
 					ft.commit();
 				}
-				EditItemDialogFragment editItemDialog = EditItemDialogFragment.newInstance(mActiveListID, activeItemID);
+				EditItemDialogFragment editItemDialog = EditItemDialogFragment.newInstance(mActiveListID, itemID);
 				editItemDialog.show(fm, "dialog_edit_item");
 
 				return true;
@@ -206,17 +201,9 @@ public class ManageItemsFragment extends Fragment
 		return view;
 	}
 
-	protected void SendActiveGroupID() {
-		String activeGroupIdReceiverKey = String.valueOf(mActiveListID)
-				+ ManageItemsFragment.ACTIVE_GROUP_ID_BROADCAST_KEY;
-		Intent activeGroupIdReceiverIntent = new Intent(activeGroupIdReceiverKey);
-		activeGroupIdReceiverIntent.putExtra("ActiveGroupID", spinGroups.getSelectedItemId());
-		LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(activeGroupIdReceiverIntent);
-	}
-
-	protected void ApplyGroupsToCheckedItems() {
+	protected void ApplyGroupsToManageItems() {
 		long groupID = spinGroups.getSelectedItemId();
-		ItemsTable.ApplyGroupToCheckedItems(getActivity(), mActiveListID, groupID);
+		ItemsTable.ApplyGroupToManageItems(getActivity(), mActiveListID, groupID);
 	}
 
 	private void setFragmentColors() {
@@ -225,86 +212,63 @@ public class ManageItemsFragment extends Fragment
 		itemsListView.setBackgroundColor(this.mListSettings.getListBackgroundColor());
 	}
 
-	private void RequestCheckItemsTabPosition() {
-		String requestCheckItemsTabPositionReceiverKey = String.valueOf(mActiveListID)
-				+ ManageItemsFragment.REQUEST_CHECK_ITEMS_TAB_POSITION_BROADCAST_KEY;
-		Intent requestCheckItemsTabPositionIntent = new Intent(requestCheckItemsTabPositionReceiverKey);
-		LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(requestCheckItemsTabPositionIntent);
-	}
-
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
-		MyLog.i("CheckItemsFragment", "onActivityCreated");
+		MyLog.i("ManageItemsFragment", "onActivityCreated() listID:" + mActiveListID);
+		EventBus.getDefault().register(this);
 		mLoaderManager = getLoaderManager();
-		mLoaderManager.initLoader(AListUtilities.ITEMS_LOADER_ID, null, mCheckItemsFragmentCallbacks);
-		mLoaderManager.initLoader(AListUtilities.GROUPS_LOADER_ID, null, mCheckItemsFragmentCallbacks);
-
-		mCheckItemsTabBroadcastReceiver = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				if (intent.hasExtra("checkItemsTabPosition")) {
-					int checkItemsTabPosition = intent.getExtras().getInt("checkItemsTabPosition", 0);
-					ShowSetGroupsLinearLayout(checkItemsTabPosition);
-				}
-			}
-		};
-
-		mRequestActiveGroupIdBroadcastReceiver = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				SendActiveGroupID();
-			}
-		};
-
-		// Register local broadcast receivers.
-		String applyCheckItemsTabPositionKey = String.valueOf(mActiveListID) + CHECK_ITEMS_TAB_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mCheckItemsTabBroadcastReceiver,
-				new IntentFilter(applyCheckItemsTabPositionKey));
-
-		String requestActiveGroupIdBroadcastKey = String.valueOf(mActiveListID) + REQUEST_ACTIVE_GROUP_ID_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mRequestActiveGroupIdBroadcastReceiver,
-				new IntentFilter(requestActiveGroupIdBroadcastKey));
+		mLoaderManager.initLoader(AListUtilities.ITEMS_LOADER_ID, null, mManageItemsFragmentCallbacks);
+		mLoaderManager.initLoader(AListUtilities.GROUPS_LOADER_ID, null, mManageItemsFragmentCallbacks);
 
 		super.onActivityCreated(savedInstanceState);
 	}
 
-	private void ShowSetGroupsLinearLayout(int checkItemsTabPosition) {
-		switch (checkItemsTabPosition) {
+	public void onEvent(ManageItemsTabPostionChange event) {
+		mActiveTabPosition = event.getTabPosition();
+		selectTabPosition(mActiveTabPosition);
+	}
 
-			case CHECK_ITEMS_TAB_CULL_MOVE_ITEMS:
-				setGroupsLinearLayout.setVisibility(View.GONE);
-				break;
+	private void selectTabPosition(int manageItemsTabPostion) {
+		if (setGroupsLinearLayout != null) {
+			switch (manageItemsTabPostion) {
 
-			case CHECK_ITEMS_TAB_SET_GROUPS:
-				setGroupsLinearLayout.setVisibility(View.VISIBLE);
-				break;
+				case TAB_CULL_MOVE_ITEMS:
+					setGroupsLinearLayout.setVisibility(View.GONE);
+					break;
 
-			default:
-				break;
+				case TAB_SET_GROUPS:
+					setGroupsLinearLayout.setVisibility(View.VISIBLE);
+					break;
+
+				default:
+					break;
+			}
 		}
 	}
 
 	@Override
 	public void onStart() {
 		super.onStart();
-		MyLog.i("CheckItemsFragment", "onStart");
+		MyLog.i("ManageItemsFragment", "onStart() listID:" + mActiveListID);
 	}
 
 	@Override
 	public void onResume() {
 		super.onResume();
 
-		MyLog.i("CheckItemsFragment", "onResume()");
+		MyLog.i("ManageItemsFragment", "onResume() listID:" + mActiveListID);
 
 		Bundle bundle = this.getArguments();
 		if (bundle != null) {
 			mActiveListID = bundle.getLong("listID", 0);
 		}
+
 		mListSettings = new ListSettings(getActivity(), mActiveListID);
-		RequestCheckItemsTabPosition();
 		setFragmentColors();
+
+		SharedPreferences storedStates = getActivity().getSharedPreferences("AList", Context.MODE_PRIVATE);
+		mActiveTabPosition = storedStates.getInt("ActiveTabPosition", 0);
+		selectTabPosition(mActiveTabPosition);
 
 		// Set onResume flags
 		flag_FirstTimeLoadingItemDataSinceOnResume = true;
@@ -314,7 +278,7 @@ public class ManageItemsFragment extends Fragment
 	public void onPause() {
 		super.onPause();
 
-		MyLog.i("CheckItemsFragment", "onPause()");
+		MyLog.i("ManageItemsFragment", "onPause() listID:" + mActiveListID);
 
 		// save ItemsListView position
 		View v = itemsListView.getChildAt(0);
@@ -329,40 +293,37 @@ public class ManageItemsFragment extends Fragment
 	@Override
 	public void onStop() {
 		super.onStop();
-		MyLog.i("CheckItemsFragment", "onStop");
+		MyLog.i("ManageItemsFragment", "onStop() listID:" + mActiveListID);
 	}
 
 	@Override
 	public void onDestroyView() {
 		super.onDestroyView();
-		MyLog.i("CheckItemsFragment", "onDestroyView");
+		EventBus.getDefault().unregister(this);
+		MyLog.i("ManageItemsFragment", "onDestroyView() listID:" + mActiveListID);
 	}
 
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		MyLog.i("CheckItemsFragment", "onDestroy");
-		// Unregister local broadcast receivers
-		LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mCheckItemsTabBroadcastReceiver);
-		LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mRequestActiveGroupIdBroadcastReceiver);
-
+		MyLog.i("ManageItemsFragment", "onDestroy() listID:" + mActiveListID);
 	}
 
 	@Override
 	public void onDetach() {
 		super.onDetach();
-		MyLog.i("CheckItemsFragment", "onDetach");
+		MyLog.i("ManageItemsFragment", "onDetach() listID:" + mActiveListID);
 	}
 
 	@Override
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
-		MyLog.i("CheckItemsFragment", "onViewCreated");
+		MyLog.i("ManageItemsFragment", "onViewCreated() listID:" + mActiveListID);
 	}
 
 	@Override
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-		MyLog.i("CheckItemsFragment: onCreateLoader; id = " + id, "; listID = " + mActiveListID);
+		MyLog.i("ManageItemsFragment: onCreateLoader; id = " + id, "; listID = " + mActiveListID);
 
 		CursorLoader cursorLoader = null;
 		String selection = null;
@@ -412,11 +373,11 @@ public class ManageItemsFragment extends Fragment
 					}
 
 				} catch (SQLiteException e) {
-					MyLog.e("CheckItemsFragment: onCreateLoader SQLiteException: ", e.toString());
+					MyLog.e("ManageItemsFragment: onCreateLoader SQLiteException: ", e.toString());
 					return null;
 
 				} catch (IllegalArgumentException e) {
-					MyLog.e("CheckItemsFragment: onCreateLoader IllegalArgumentException: ", e.toString());
+					MyLog.e("ManageItemsFragment: onCreateLoader IllegalArgumentException: ", e.toString());
 					return null;
 				}
 				break;
@@ -426,11 +387,11 @@ public class ManageItemsFragment extends Fragment
 					cursorLoader = GroupsTable.getAllGroupsInListIncludeDefault(getActivity(), mActiveListID,
 							GroupsTable.SORT_ORDER_GROUP);
 				} catch (SQLiteException e) {
-					MyLog.e("CheckItemsFragment: onCreateLoader SQLiteException: ", e.toString());
+					MyLog.e("ManageItemsFragment: onCreateLoader SQLiteException: ", e.toString());
 					return null;
 
 				} catch (IllegalArgumentException e) {
-					MyLog.e("CheckItemsFragment: onCreateLoader IllegalArgumentException: ", e.toString());
+					MyLog.e("ManageItemsFragment: onCreateLoader IllegalArgumentException: ", e.toString());
 					return null;
 				}
 
@@ -446,12 +407,12 @@ public class ManageItemsFragment extends Fragment
 	@Override
 	public void onLoadFinished(Loader<Cursor> loader, Cursor newCursor) {
 		int id = loader.getId();
-		MyLog.i("CheckItemsFragment: onLoadFinished; id = " + id, "; listID = " + mActiveListID);
+		MyLog.i("ManageItemsFragment: onLoadFinished; id = " + id, "; listID = " + mActiveListID);
 		// The asynchronous load is complete and the newCursor is now available for use.
 		// Update the adapter to show the changed data.
 		switch (loader.getId()) {
 			case AListUtilities.ITEMS_LOADER_ID:
-				mCheckItemsCursorAdaptor.swapCursor(newCursor);
+				mManageItemsCursorAdaptor.swapCursor(newCursor);
 				if (flag_FirstTimeLoadingItemDataSinceOnResume) {
 					itemsListView
 							.setSelectionFromTop(
@@ -463,22 +424,24 @@ public class ManageItemsFragment extends Fragment
 
 			case AListUtilities.GROUPS_LOADER_ID:
 				mGroupsSpinnerCursorAdapter.swapCursor(newCursor);
+				long groupID = mListSettings.getManageItemsGroupID();
+				int position = AListUtilities.getIndex(spinGroups, groupID);
+				spinGroups.setSelection(position);
 				break;
 
 			default:
 				break;
 		}
-
 	}
 
 	@Override
 	public void onLoaderReset(Loader<Cursor> loader) {
 		int id = loader.getId();
-		MyLog.i("CheckItemsFragment: onLoaderReset; id = " + id, "; listID = " + mActiveListID);
+		MyLog.i("ManageItemsFragment: onLoaderReset; id = " + id, "; listID = " + mActiveListID);
 
 		switch (loader.getId()) {
 			case AListUtilities.ITEMS_LOADER_ID:
-				mCheckItemsCursorAdaptor.swapCursor(null);
+				mManageItemsCursorAdaptor.swapCursor(null);
 				break;
 
 			case AListUtilities.GROUPS_LOADER_ID:

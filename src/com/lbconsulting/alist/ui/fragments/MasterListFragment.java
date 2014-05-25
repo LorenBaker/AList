@@ -39,8 +39,6 @@ import com.lbconsulting.alist.utilities.MyLog;
 
 public class MasterListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
-	// OnMasterListItemLongClickListener mMasterListItemLongClickCallback;
-
 	// Container Activity must implement this interface
 	public interface OnMasterListItemLongClickListener {
 
@@ -50,9 +48,6 @@ public class MasterListFragment extends Fragment implements LoaderManager.Loader
 	private String[] loaderNames = { "Lists_Loader", "Items_Loader", "Stores_Loader", "Groups_Loader" };
 
 	private long mActiveListID;
-	// private long mActiveItemID;
-	// private BroadcastReceiver mItemChangedReceiver;
-
 	private ListSettings mListSettings;
 	private boolean flag_FirstTimeLoadingItemDataSinceOnResume = false;
 
@@ -206,7 +201,6 @@ public class MasterListFragment extends Fragment implements LoaderManager.Loader
 						&& (keyCode == KeyEvent.KEYCODE_ENTER || keyCode == KeyEvent.FLAG_EDITOR_ACTION || keyCode == KeyEvent.KEYCODE_DPAD_CENTER)) {
 
 					SelectItemForList();
-					// getActivity().getWindow().setSoftInputMode(LayoutParams.SOFT_INPUT_STATE_VISIBLE);
 					result = true;
 				}
 				return result;
@@ -242,17 +236,6 @@ public class MasterListFragment extends Fragment implements LoaderManager.Loader
 
 		});
 
-		/*		mItemChangedReceiver = new BroadcastReceiver() {
-					@Override
-					public void onReceive(Context context, Intent intent) {
-						mLoaderManager.restartLoader(AListUtilities.ITEMS_LOADER_ID, null, mMasterListFragmentCallbacks);
-					}
-				};
-
-				String itemChangedReceiverKey = String.valueOf(mActiveListID) + ItemsTable.ITEM_CHANGED_BROADCAST_KEY;
-				LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mItemChangedReceiver,
-						new IntentFilter(itemChangedReceiverKey));*/
-
 		MyLog.i("MasterListFragment", "onActivityCreated");
 		mLoaderManager = getLoaderManager();
 		mLoaderManager.initLoader(AListUtilities.ITEMS_LOADER_ID, null, mMasterListFragmentCallbacks);
@@ -267,12 +250,9 @@ public class MasterListFragment extends Fragment implements LoaderManager.Loader
 			ItemsTable.SelectItem(getActivity(), newItemNameID, true);
 
 			String newItemNote = txtItemNote.getText().toString().trim();
-			// if (!newItemNote.isEmpty()) {
 			ContentValues newFieldValues = new ContentValues();
 			newFieldValues.put(ItemsTable.COL_ITEM_NOTE, newItemNote);
 			ItemsTable.UpdateItemFieldValues(getActivity(), newItemNameID, newFieldValues);
-			// mLoaderManager.restartLoader(AListUtilities.ITEMS_LOADER_ID, null, mMasterListFragmentCallbacks);
-			// }
 		}
 		txtItemNote.setText("");
 		txtItemName.setText("");
@@ -315,7 +295,6 @@ public class MasterListFragment extends Fragment implements LoaderManager.Loader
 			mActiveListID = bundle.getLong("listID", 0);
 		}
 
-		// mListSettings = new ListSettings(getActivity(), mActiveListID);
 		mListSettings.RefreshListSettings();
 		MasterListCursorAdaptor.RefreshListSettings();
 		setViewColors();
@@ -349,7 +328,6 @@ public class MasterListFragment extends Fragment implements LoaderManager.Loader
 	@Override
 	public void onDestroyView() {
 		MyLog.i("MasterListFragment", "onDestroyView");
-		// LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mItemChangedReceiver);
 		super.onDestroyView();
 	}
 
@@ -498,6 +476,5 @@ public class MasterListFragment extends Fragment implements LoaderManager.Loader
 			default:
 				break;
 		}
-
 	}
 }

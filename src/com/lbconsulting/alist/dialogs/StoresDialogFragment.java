@@ -4,10 +4,8 @@ import android.app.Activity;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -17,9 +15,11 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import com.lbconsulting.alist.R;
+import com.lbconsulting.alist.classes.AListEvents.RestartStoresActivity;
 import com.lbconsulting.alist.database.StoresTable;
-import com.lbconsulting.alist.ui.activities.ManageStoresActivity;
 import com.lbconsulting.alist.utilities.MyLog;
+
+import de.greenrobot.event.EventBus;
 
 public class StoresDialogFragment extends DialogFragment {
 
@@ -163,7 +163,7 @@ public class StoresDialogFragment extends DialogFragment {
 						default:
 							break;
 					}
-					SendRestartStoresActivityBroadcast();
+					EventBus.getDefault().post(new RestartStoresActivity(mActiveStoreID));
 					getDialog().dismiss();
 				}
 			});
@@ -208,14 +208,6 @@ public class StoresDialogFragment extends DialogFragment {
 		}
 
 		return view;
-	}
-
-	protected void SendRestartStoresActivityBroadcast() {
-		String restartStoresActivityKey = String.valueOf(mActiveListID)
-				+ ManageStoresActivity.RESTART_STORES_ACTIVITY_BROADCAST_KEY;
-		Intent restartStoresActivityIntent = new Intent(restartStoresActivityKey);
-		restartStoresActivityIntent.putExtra("ActiveStoreID", mActiveStoreID);
-		LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(restartStoresActivityIntent);
 	}
 
 	@Override

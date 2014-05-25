@@ -1,11 +1,7 @@
 package com.lbconsulting.alist.ui.fragments;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
 import android.os.Bundle;
@@ -13,7 +9,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,15 +41,12 @@ public class ListsFragment extends Fragment implements LoaderManager.LoaderCallb
 	private ListView mItemsListView;
 	private Spinner mStoreSpinner;
 
-	private BroadcastReceiver mItemChangedReceiver;
-
 	private LoaderManager mLoaderManager = null;
 	// The callbacks through which we will interact with the LoaderManager.
 	private LoaderManager.LoaderCallbacks<Cursor> mListsFragmentCallbacks;
 	private ItemsCursorAdaptor mItemsCursorAdaptor;
 
 	private StoresSpinnerCursorAdapter mStoresSpinnerCursorAdapter;
-	public final static String ACTIVE_STORE_ID_BROADCAST_KEY = "ActiveStoreIdBroadcastKey";
 
 	private boolean flag_FirstTimeLoadingItemDataSinceOnResume = false;
 
@@ -146,34 +138,6 @@ public class ListsFragment extends Fragment implements LoaderManager.LoaderCallb
 			mItemsCursorAdaptor = new ItemsCursorAdaptor(getActivity(), null, 0, mListSettings);
 			mItemsListView.setAdapter(mItemsCursorAdaptor);
 		}
-		/*		mItemsListView.setOnScrollListener(new OnScrollListener() {
-
-					@Override
-					public void onScrollStateChanged(AbsListView view, int scrollState) {
-						// TODO Auto-generated method stub
-						int firstVisiblePosition = view.getFirstVisiblePosition();
-						// LinearLayout llListItemsRow = (LinearLayout) mItemsListView.getChildAt(firstVisiblePosition);
-						View listItemsRow = mItemsListView.getChildAt(firstVisiblePosition);
-						if (listItemsRow != null) {
-							TextView tvListItemSeparator = (TextView) listItemsRow.findViewById(R.id.tvListItemSeparator);
-							if (tvListItemSeparator != null) {
-								boolean seperatorIsVisible = tvListItemSeparator.getVisibility() == View.VISIBLE;
-								if (seperatorIsVisible) {
-									String visibleSeperatorText = tvListItemSeparator.getText().toString();
-								} else {
-									String notVisibleSeperatorText = tvListItemSeparator.getText().toString();
-								}
-							}
-						}
-
-					}
-
-					@Override
-					public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-						// TODO Auto-generated method stub
-
-					}
-				});*/
 
 		setViewColors();
 
@@ -198,10 +162,7 @@ public class ListsFragment extends Fragment implements LoaderManager.LoaderCallb
 				ContentValues newFieldValues = new ContentValues();
 				newFieldValues.put(ListsTable.COL_ACTIVE_STORE_ID, storeID);
 				mListSettings.updateListsTableFieldValues(newFieldValues);
-
-				// broadcast to the ListsActivity that the selected store has changed
 				mActiveStoreID = storeID;
-				SendActiveStoreIdBroadcastBroadCast();
 			}
 
 			@Override
@@ -210,43 +171,7 @@ public class ListsFragment extends Fragment implements LoaderManager.LoaderCallb
 			}
 		});
 
-		// mItemsListView.setOnItemLongClickListener(null);
-		/*
-				mItemsListView.setOnItemLongClickListener(new OnItemLongClickListener() {
-
-					@Override
-					public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long activeItemID) {
-						// if (!mListSettings.isManualSort()) {
-
-										if (mListSettings.isManualSort()) {
-											DynamicListView.ManualSort(position, activeItemID);
-											return true;
-										}
-
-						MyLog.i("ListsFragment", "onItemLongClick");
-						FragmentManager fm = getFragmentManager();
-						Fragment prev = fm.findFragmentByTag("dialog_edit_item");
-						if (prev != null) {
-							FragmentTransaction ft = fm.beginTransaction();
-							ft.remove(prev);
-							ft.commit();
-						}
-						EditItemDialogFragment editItemDialog = EditItemDialogFragment.newInstance(mActiveListID, activeItemID);
-						editItemDialog.show(fm, "dialog_edit_item");
-
-						return true;
-
-					}
-				});*/
-
 		return view;
-	}
-
-	private void SendActiveStoreIdBroadcastBroadCast() {
-		String activeStoreIdBroadcastKey = String.valueOf(mActiveListID) + ListsFragment.ACTIVE_STORE_ID_BROADCAST_KEY;
-		Intent activeStoreIdBroadcastIntent = new Intent(activeStoreIdBroadcastKey);
-		activeStoreIdBroadcastIntent.putExtra("ActiveStoreID", mActiveStoreID);
-		LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(activeStoreIdBroadcastIntent);
 	}
 
 	private void setViewColors() {
@@ -258,19 +183,6 @@ public class ListsFragment extends Fragment implements LoaderManager.LoaderCallb
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		MyLog.i("ListsFragment", "onActivityCreated");
-
-		mItemChangedReceiver = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				mLoaderManager.restartLoader(AListUtilities.ITEMS_LOADER_ID, null, mListsFragmentCallbacks);
-			}
-
-		};
-
-		String itemChangedReceiverKey = String.valueOf(mActiveListID) + ItemsTable.ITEM_CHANGED_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mItemChangedReceiver,
-				new IntentFilter(itemChangedReceiverKey));
 
 		mLoaderManager = getLoaderManager();
 		mLoaderManager.initLoader(AListUtilities.ITEMS_LOADER_ID, null, mListsFragmentCallbacks);
@@ -344,11 +256,6 @@ public class ListsFragment extends Fragment implements LoaderManager.LoaderCallb
 	@Override
 	public void onDestroy() {
 		MyLog.i("ListsFragment", "onDestroy");
-		// Unregister local broadcast receivers
-		// LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mRestartStoresLoaderReceiver);
-		// LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mRestartItemsLoaderReceiver);
-		LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mItemChangedReceiver);
-
 		super.onDestroy();
 	}
 

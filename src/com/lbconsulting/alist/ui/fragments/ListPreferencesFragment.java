@@ -1,16 +1,12 @@
 package com.lbconsulting.alist.ui.fragments;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.LocalBroadcastManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,25 +24,13 @@ import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.dialogs.ListsDialogFragment;
 import com.lbconsulting.alist.ui.activities.ListColorsActivity;
-import com.lbconsulting.alist.ui.activities.ListPreferencesActivity;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
 public class ListPreferencesFragment extends Fragment {
 
-	/*	public static final int ALPHABETICAL = 0;
-		public static final int BY_GROUP = 1;
-		public static final int MANUAL = 1;
-		public static final int SELECTED_AT_TOP = 2;
-		public static final int SELECTED_AT_BOTTOM = 3;
-		public static final int LAST_USED = 4;*/
-
 	private long mActiveListID;
 	private ListSettings listSettings;
-	public static final String LIST_PREFERENCES_CHANGED_BROADCAST_KEY = "list_preferences_changed";
-	// public static final String LIST_COLORS_CHANGED_BROADCAST_KEY = "list_preferences_colors_changed";
-
-	private BroadcastReceiver mPreferencesChangedBroadcastReceiver;
 
 	private LinearLayout llFragListPreferences;
 	private TextView tvListTitle;
@@ -175,43 +159,6 @@ public class ListPreferencesFragment extends Fragment {
 		swDeleteNoteUponClearingItem.setOnCheckedChangeListener(switchOnCheckedChanged);
 
 		getActivity().getActionBar().setTitle("List Preferences");
-
-		// Our handler for received Intents. This will be called whenever an Intent
-		// with an action named "list_preferences_changed" is broadcasted.
-		mPreferencesChangedBroadcastReceiver = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				// there has been a changed in the ListsTable ...
-				// so refresh listSettings
-				listSettings.RefreshListSettings();
-
-				// Get extra data included in the Intent
-				if (intent.hasExtra("editedListTitle")) {
-					String newListTitle = intent.getStringExtra("editedListTitle");
-					setListTitle(newListTitle);
-					String key = String.valueOf(mActiveListID)
-							+ ListPreferencesActivity.LIST_TITLE_CHANGE_BROADCAST_KEY;
-					Intent intentForActivity = new Intent(key);
-					LocalBroadcastManager.getInstance(getActivity()).sendBroadcast(intentForActivity);
-				}
-				/*				if (intent.hasExtra("newListSortOrder")) {
-									int newListSortOrder = intent.getIntExtra("newListSortOrder", 0);
-									setListSortOrder(newListSortOrder);
-								}
-								if (intent.hasExtra("newMasterListSortOrder")) {
-									int newMasterListSortOrder = intent.getIntExtra("newMasterListSortOrder", 0);
-									setMasterListSortOrder(newMasterListSortOrder);
-								}*/
-			}
-		};
-
-		// Register to receive messages.
-		// We are registering an observer (mPreferencesChangedBroadcastReceiver) to receive Intents
-		// with actions named "list_preferences_changed".
-		String key = String.valueOf(mActiveListID) + LIST_PREFERENCES_CHANGED_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mPreferencesChangedBroadcastReceiver,
-				new IntentFilter(key));
 
 		rbGroupListsView.setOnCheckedChangeListener(new OnCheckedChangeListener() {
 
@@ -526,8 +473,6 @@ public class ListPreferencesFragment extends Fragment {
 	@Override
 	public void onDestroy() {
 		checkListID("onDestroy");
-		// Unregister since the fragment is about to be closed.
-		LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mPreferencesChangedBroadcastReceiver);
 		super.onDestroy();
 	}
 
@@ -542,18 +487,5 @@ public class ListPreferencesFragment extends Fragment {
 		checkListID("onViewCreated");
 		super.onViewCreated(view, savedInstanceState);
 	}
-	/*
-		@Override
-		public void onApplyEditListTitleDialog(String newListTitle) {
-			listSettings = new ListSettings(getActivity(), mActiveListID);
-			if (tvListTitle != null) {
-				tvListTitle.setText(newListTitle);
-			}
-		}
-
-		@Override
-		public void onCancelEditListTitleDialog() {
-			// Do nothing
-		}*/
 
 }

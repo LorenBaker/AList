@@ -436,6 +436,13 @@ public class ListSettings {
 		return -1;
 	}
 
+	public int getManageItemsGroupID() {
+		if (mListCursor != null) {
+			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_MANAGE_ITEMS_GROUP_ID));
+		}
+		return -1;
+	}
+
 	public void updateListsTableFieldValues(ContentValues newFieldValues) {
 		if (mListCursor != null) {
 			ListsTable.UpdateListsTableFieldValues(mContext, mListID, newFieldValues);

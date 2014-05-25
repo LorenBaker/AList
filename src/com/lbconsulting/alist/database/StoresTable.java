@@ -29,10 +29,11 @@ public class StoresTable {
 	public static final String COL_GPS_LONGITUDE = "gpsLongitude"; // 9
 	public static final String COL_WEBSITE_URL = "websiteURL"; // 10
 	public static final String COL_PHONE_NUMBER = "phoneNumber"; // 11
+	public static final String COL_LAST_STORE_LOCATION_ID = "lastStoreLocationID";
 
 	public static final String[] PROJECTION_ALL = { COL_STORE_ID, COL_STORE_NAME, COL_LIST_ID,
 			COL_STREET1, COL_STREET2, COL_CITY, COL_STATE, COL_ZIP,
-			COL_GPS_LATITUDE, COL_GPS_LONGITUDE, COL_WEBSITE_URL, COL_PHONE_NUMBER
+			COL_GPS_LATITUDE, COL_GPS_LONGITUDE, COL_WEBSITE_URL, COL_PHONE_NUMBER, COL_LAST_STORE_LOCATION_ID
 	};
 
 	public static final String CONTENT_PATH = TABLE_STORES;
@@ -68,7 +69,8 @@ public class StoresTable {
 					+ COL_GPS_LATITUDE + " text, "
 					+ COL_GPS_LONGITUDE + " text, "
 					+ COL_WEBSITE_URL + " text, "
-					+ COL_PHONE_NUMBER + " text"
+					+ COL_PHONE_NUMBER + " text, "
+					+ COL_LAST_STORE_LOCATION_ID + " integer default 1"
 					+ ");";
 
 	private static String defalutStoreValue = "[No Store]";

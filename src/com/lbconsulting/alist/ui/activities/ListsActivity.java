@@ -1,11 +1,8 @@
 package com.lbconsulting.alist.ui.activities;
 
 import android.app.AlertDialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
@@ -14,7 +11,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.Menu;
@@ -24,6 +20,7 @@ import android.widget.Toast;
 
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ListsPagerAdapter;
+import com.lbconsulting.alist.classes.AListEvents.NewListCreated;
 import com.lbconsulting.alist.classes.DynamicListView;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.GroupsTable;
@@ -32,11 +29,11 @@ import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.database.LocationsTable;
 import com.lbconsulting.alist.database.StoresTable;
 import com.lbconsulting.alist.dialogs.ListsDialogFragment;
-import com.lbconsulting.alist.ui.fragments.ListPreferencesFragment;
-import com.lbconsulting.alist.ui.fragments.ListsFragment;
 import com.lbconsulting.alist.ui.fragments.MasterListFragment;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
+
+import de.greenrobot.event.EventBus;
 
 public class ListsActivity extends FragmentActivity {
 
@@ -52,13 +49,11 @@ public class ListsActivity extends FragmentActivity {
 	private long mActiveListID = NO_ACTIVE_LIST_ID;
 	private int mActiveListPosition = 0;
 	private long mActiveItemID;
-	private long mActiveStoreID = -1;
+	// private long mActiveStoreID = -1;
 
 	private ListSettings mListSettings;
 
 	private Cursor mAllListsCursor;
-	private BroadcastReceiver mListTableChanged;
-	private BroadcastReceiver mActiveStoreIdReceiver;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -70,43 +65,8 @@ public class ListsActivity extends FragmentActivity {
 		mActiveListID = storedStates.getLong("ActiveListID", -1);
 		mActiveListPosition = storedStates.getInt("ActiveListPosition", -1);
 		mActiveItemID = storedStates.getLong("ActiveItemID", -1);
-		// mActiveStoreID = storedStates.getLong("ActiveStoreID", -1);
 
-		mListTableChanged = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				if (intent.hasExtra("editedListTitle")) {
-					// the list title has changed ...
-				}
-
-				if (intent.hasExtra("newListID")) {
-					// a new list has been created ...
-					mActiveListID = intent.getLongExtra("newListID", 0);
-				}
-
-				// restart activity to ensure that all lists are shown in
-				// alphabetical order
-				ReStartListsActivity();
-			}
-		};
-
-		mActiveStoreIdReceiver = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				mActiveStoreID = intent.getLongExtra("ActiveStoreID", -1);
-			}
-		};
-
-		// Register to receive messages.
-		String key = String.valueOf(mActiveListID) + ListPreferencesFragment.LIST_PREFERENCES_CHANGED_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(this).registerReceiver(mListTableChanged, new IntentFilter(key));
-
-		String activeStoreIdReceiverKey = String.valueOf(mActiveListID) + ListsFragment.ACTIVE_STORE_ID_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(this).registerReceiver(mActiveStoreIdReceiver,
-				new IntentFilter(activeStoreIdReceiverKey));
-
+		EventBus.getDefault().register(this);
 		if (mActiveListID < 2) {
 			CreatNewList();
 		}
@@ -136,7 +96,6 @@ public class ListsActivity extends FragmentActivity {
 			public void onPageSelected(int position) {
 				// A list page has been selected
 				SetActiveListID(position);
-				SetActiveListBroadcastReceivers();
 				DynamicListView.setManualSort(mListSettings.isManualSort());
 				MyLog.d("Lists_ACTIVITY", "onPageSelected() - position = " + position + " ; listID = " + mActiveListID);
 
@@ -151,6 +110,17 @@ public class ListsActivity extends FragmentActivity {
 		}
 	}
 
+	/*	public void onEvent(ActiveStoreChanged event) {
+			mActiveStoreID = event.getActiveStoreID();
+		}*/
+
+	public void onEvent(NewListCreated event) {
+		mActiveListID = event.getActiveListID();
+		// restart activity to ensure that all lists are shown in
+		// alphabetical order
+		ReStartListsActivity();
+	}
+
 	private void SetActiveListID(int position) {
 		if (mAllListsCursor != null) {
 			try {
@@ -162,20 +132,6 @@ public class ListsActivity extends FragmentActivity {
 				MyLog.d("Lists_ACTIVITY", "Exception in getlistID: " + e);
 			}
 		}
-	}
-
-	private void SetActiveListBroadcastReceivers() {
-		// Unregister old receiver
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(mListTableChanged);
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(mActiveStoreIdReceiver);
-
-		// Register new receiver
-		String key = String.valueOf(mActiveListID) + ListPreferencesFragment.LIST_PREFERENCES_CHANGED_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(this).registerReceiver(mListTableChanged, new IntentFilter(key));
-
-		String activeStoreIdReceiverKey = String.valueOf(mActiveListID) + ListsFragment.ACTIVE_STORE_ID_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(this).registerReceiver(mActiveStoreIdReceiver,
-				new IntentFilter(activeStoreIdReceiverKey));
 	}
 
 	private void ReStartListsActivity() {
@@ -307,7 +263,6 @@ public class ListsActivity extends FragmentActivity {
 		applicationStates.putLong("ActiveListID", mActiveListID);
 		applicationStates.putLong("ActiveItemID", mActiveItemID);
 		applicationStates.putInt("ActiveListPosition", mActiveListPosition);
-		// applicationStates.putLong("ActiveStoreID", mActiveStoreID);
 
 		applicationStates.commit();
 		super.onPause();
@@ -325,9 +280,8 @@ public class ListsActivity extends FragmentActivity {
 		if (mAllListsCursor != null) {
 			mAllListsCursor.close();
 		}
-		// Unregister since the activity is about to be closed.
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(mListTableChanged);
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(mActiveStoreIdReceiver);
+
+		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}
 
@@ -345,7 +299,7 @@ public class ListsActivity extends FragmentActivity {
 			case R.id.action_removeStruckOffItems:
 				ItemsTable.UnStrikeAndDeselectAllStruckOutItems(this, mActiveListID,
 						mListSettings.getDeleteNoteUponDeselectingItem());
-				// SendRestartItemsLoaderBroadCast();
+
 				return true;
 
 			case R.id.action_addItem:

@@ -1,10 +1,7 @@
 package com.lbconsulting.alist.ui.activities;
 
-import android.content.BroadcastReceiver;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -12,7 +9,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.Menu;
@@ -23,14 +19,16 @@ import android.widget.Toast;
 
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ManageLocationsPagerAdaptor;
+import com.lbconsulting.alist.classes.AListEvents.ActiveLocationChanged;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.GroupsTable;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.database.StoresTable;
 import com.lbconsulting.alist.dialogs.LocationsDialogFragment;
-import com.lbconsulting.alist.ui.fragments.ManageLocationsFragment;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
+
+import de.greenrobot.event.EventBus;
 
 public class ManageLocationsActivity extends FragmentActivity {
 
@@ -46,12 +44,13 @@ public class ManageLocationsActivity extends FragmentActivity {
 	private ViewPager mPager;
 	private Cursor mAllStoresCursor;
 
-	private BroadcastReceiver mActiveLocationIdReceiver;
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		MyLog.i("ManageLocations_ACTIVITY", "onCreate");
 		super.onCreate(savedInstanceState);
+
+		EventBus.getDefault().register(this);
+
 		Intent intent = getIntent();
 		mActiveListID = intent.getLongExtra("ActiveListID", -1);
 		mListSettings = new ListSettings(this, mActiveListID);
@@ -86,7 +85,7 @@ public class ManageLocationsActivity extends FragmentActivity {
 			@Override
 			public void onPageSelected(int position) {
 				SetActiveStoreID(position);
-				SetActiveListBroadcastReceivers();
+				// SetActiveListBroadcastReceivers();
 				MyLog.d("ManageLocations_ACTIVITY", "onPageSelected() - position = " + position + " ; storeID = "
 						+ mActiveStoreID);
 
@@ -96,22 +95,6 @@ public class ManageLocationsActivity extends FragmentActivity {
 			}
 		});
 
-		mActiveLocationIdReceiver = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent activeLocatonIntent) {
-				if (activeLocatonIntent.hasExtra("ActiveLocationID")) {
-					mActiveLocationID = activeLocatonIntent.getLongExtra("ActiveLocationID", -1);
-				}
-			}
-		};
-
-		// Register local broadcast receivers.
-		String activeLocationIdReceiverKey = String.valueOf(mActiveListID)
-				+ ManageLocationsFragment.ACTIVE_LOCATION_ID_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(this).registerReceiver(mActiveLocationIdReceiver,
-				new IntentFilter(activeLocationIdReceiverKey));
-
 		if (mTwoFragmentLayout) {
 			LoadStoresFragment();
 		}
@@ -120,6 +103,13 @@ public class ManageLocationsActivity extends FragmentActivity {
 	private void SetManageLocationsPagerAdaptor() {
 		mManageLocationsPagerAdaptor = new ManageLocationsPagerAdaptor(getSupportFragmentManager(), this, mActiveListID);
 		mPager.setAdapter(mManageLocationsPagerAdaptor);
+	}
+
+	public void onEvent(ActiveLocationChanged event) {
+		if (event.getListID() == mActiveListID && event.getStoreID() == mActiveStoreID) {
+			mActiveLocationID = event.getLocationID();
+		}
+
 	}
 
 	private void LoadStoresFragment() {
@@ -146,17 +136,6 @@ public class ManageLocationsActivity extends FragmentActivity {
 		}
 	}
 
-	private void SetActiveListBroadcastReceivers() {
-		// Unregister old receivers
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(mActiveLocationIdReceiver);
-
-		// Register new local broadcast receivers.
-		String activeLocationIdReceiverKey = String.valueOf(mActiveListID)
-				+ ManageLocationsFragment.ACTIVE_LOCATION_ID_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(this).registerReceiver(mActiveLocationIdReceiver,
-				new IntentFilter(activeLocationIdReceiverKey));
-	}
-
 	@Override
 	protected void onStart() {
 		MyLog.i("ManageLocations_ACTIVITY", "onStart");
@@ -178,7 +157,7 @@ public class ManageLocationsActivity extends FragmentActivity {
 		mActiveStoreID = mListSettings.getActiveStoreID();
 		mAllStoresCursor = StoresTable.getAllStoresInListCursor(this, mActiveListID, StoresTable.SORT_ORDER_STORE_NAME);
 		if (mAllStoresCursor != null && mAllStoresCursor.getCount() > 0) {
-			if (mActiveStoreID > 1) {
+			if (mActiveStoreID > 0) {
 				mActiveStorePosition = AListUtilities.getCursorPositon(mAllStoresCursor, mActiveStoreID);
 			} else {
 				// there are stores in the list, but we don't have an ActiveStoreID
@@ -317,8 +296,8 @@ public class ManageLocationsActivity extends FragmentActivity {
 
 	@Override
 	protected void onDestroy() {
-		// Unregister since the activity is about to be closed.
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(mActiveLocationIdReceiver);
+
+		EventBus.getDefault().unregister(this);
 		MyLog.i("ManageLocations_ACTIVITY", "onDestroy");
 		super.onDestroy();
 	}

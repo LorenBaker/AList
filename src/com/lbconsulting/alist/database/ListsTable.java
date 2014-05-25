@@ -50,6 +50,8 @@ public class ListsTable {
 	public static final String COL_MASTER_LISTVIEW_FIRST_VISIBLE_POSITION = "masterListViewFirstVisiblePosition";
 	public static final String COL_MASTER_LISTVIEW_TOP = "masterListViewTop";
 
+	public static final String COL_MANAGE_ITEMS_GROUP_ID = "manageItemsGroupID";
+
 	public static final String[] PROJECTION_ALL = { COL_LIST_ID, COL_LIST_TITLE, COL_ACTIVE_STORE_ID,
 			COL_DELETE_NOTE_UPON_DESELECTING_ITEM,
 			COL_LIST_SORT_ORDER, COL_MASTER_LIST_SORT_ORDER,
@@ -60,7 +62,8 @@ public class ListsTable {
 			COL_MASTER_LIST_BACKGROUND_COLOR, COL_MASTER_LIST_ITEM_NORMAL_TEXT_COLOR,
 			COL_MASTER_LIST_ITEM_SELECTED_TEXT_COLOR,
 			COL_LISTVIEW_FIRST_VISIBLE_POSITION, COL_LISTVIEW_TOP,
-			COL_MASTER_LISTVIEW_FIRST_VISIBLE_POSITION, COL_MASTER_LISTVIEW_TOP
+			COL_MASTER_LISTVIEW_FIRST_VISIBLE_POSITION, COL_MASTER_LISTVIEW_TOP,
+			COL_MANAGE_ITEMS_GROUP_ID
 	};
 
 	public static final String CONTENT_PATH = TABLE_LISTS;
@@ -110,7 +113,9 @@ public class ListsTable {
 			+ COL_LISTVIEW_TOP + " integer default 0,"
 
 			+ COL_MASTER_LISTVIEW_FIRST_VISIBLE_POSITION + " integer default 0, "
-			+ COL_MASTER_LISTVIEW_TOP + " integer default 0"
+			+ COL_MASTER_LISTVIEW_TOP + " integer default 0, "
+
+			+ COL_MANAGE_ITEMS_GROUP_ID + " integer default 0"
 			+ ");";
 
 	public static void onCreate(SQLiteDatabase database) {

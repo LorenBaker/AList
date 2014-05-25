@@ -1,14 +1,10 @@
 package com.lbconsulting.alist.ui.activities;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.Menu;
@@ -17,9 +13,12 @@ import android.view.View;
 
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ListPreferencesPagerAdaptor;
+import com.lbconsulting.alist.classes.AListEvents.ListTitleChanged;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
+
+import de.greenrobot.event.EventBus;
 
 public class ListPreferencesActivity extends FragmentActivity {
 
@@ -29,8 +28,6 @@ public class ListPreferencesActivity extends FragmentActivity {
 	private ListPreferencesPagerAdaptor mListPreferencesPagerAdapter;
 	private ViewPager mPager;
 	private Cursor mAllListsCursor;
-	private BroadcastReceiver mListTitleChanged;
-	public static final String LIST_TITLE_CHANGE_BROADCAST_KEY = "listTitleChanged";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +35,8 @@ public class ListPreferencesActivity extends FragmentActivity {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.activity_list_preferences_pager);
+
+		EventBus.getDefault().register(this);
 
 		View frag_colors_placeholder = this.findViewById(R.id.frag_colors_placeholder);
 		mTwoFragmentLayout = frag_colors_placeholder != null
@@ -72,24 +71,16 @@ public class ListPreferencesActivity extends FragmentActivity {
 			}
 		});
 
-		mListTitleChanged = new BroadcastReceiver() {
-
-			@Override
-			public void onReceive(Context context, Intent intent) {
-				// the list title has changed ...
-				// restart activity to ensure that all lists are shown in alphabetical order
-				ReStartListPreferencesActivity();
-			}
-		};
-		// Register to receive messages.
-		// We are registering an observer (mPreferencesChangedBroadcastReceiver) to receive Intents
-		// with actions named "list_preferences_changed".
-		String key = String.valueOf(mActiveListID) + LIST_TITLE_CHANGE_BROADCAST_KEY;
-		LocalBroadcastManager.getInstance(this).registerReceiver(mListTitleChanged, new IntentFilter(key));
-
 		if (mTwoFragmentLayout) {
 			LoadColorsFragment();
 		}
+	}
+
+	public void onEvent(ListTitleChanged event) {
+		mActiveListID = event.getActiveListID();
+		// the list title has changed ...
+		// restart activity to ensure that all lists are shown in alphabetical order
+		ReStartListPreferencesActivity();
 	}
 
 	private void ReStartListPreferencesActivity() {
@@ -181,7 +172,7 @@ public class ListPreferencesActivity extends FragmentActivity {
 	protected void onDestroy() {
 		MyLog.i("ListPreferences_ACTIVITY", "onDestroy");
 		// Unregister since the activity is about to be closed.
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(mListTitleChanged);
+		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}
 
