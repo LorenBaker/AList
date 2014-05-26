@@ -19,6 +19,7 @@ public class GroupsTable {
 	// Version 1
 	public static final String TABLE_GROUPS = "tblGroups";
 	public static final String COL_GROUP_ID = "_id";
+	public static final String COL_GROUP_DROPBOX_ID = "groupDropboxID";
 	public static final String COL_GROUP_NAME = "groupName";
 	public static final String COL_LIST_ID = "listID";
 	// Version 4 changes
@@ -26,7 +27,8 @@ public class GroupsTable {
 
 	public static String DEFAULT_GROUP_VALUE = "[No Group]";
 
-	public static final String[] PROJECTION_ALL = { COL_GROUP_ID, COL_GROUP_NAME, COL_LIST_ID, COL_CHECKED };
+	public static final String[] PROJECTION_ALL = { COL_GROUP_ID, COL_GROUP_DROPBOX_ID, COL_GROUP_NAME, COL_LIST_ID,
+			COL_CHECKED };
 	// SELECT tblGroups._id, tblGroups.groupName, tblGroups.groupChecked
 	// ,tblBridge.locationID, tblLocations.locationName
 	public static final String[] PROJECTION_WITH_LOCATION_NAME = {
@@ -56,6 +58,7 @@ public class GroupsTable {
 			+ TABLE_GROUPS
 			+ " ("
 			+ COL_GROUP_ID + " integer primary key autoincrement, "
+			+ COL_GROUP_DROPBOX_ID + " text, "
 			+ COL_GROUP_NAME + " text collate nocase, "
 			+ COL_LIST_ID + " integer not null references " + ListsTable.TABLE_LISTS + " (" + ListsTable.COL_LIST_ID
 			+ ") default 1, "
@@ -127,7 +130,6 @@ public class GroupsTable {
 		long newGroupID = -1;
 		if (listID > 1) {
 			// verify that the item does not already exist in the table
-			@SuppressWarnings("resource")
 			Cursor cursor = getGroup(context, listID, groupName);
 			if (cursor != null && cursor.getCount() > 0) {
 				// the item exists in the table ... so return its id
@@ -174,6 +176,10 @@ public class GroupsTable {
 				} else {
 					MyLog.e("GroupsTable", "Error in CreateNewGroup; groupName is Null!");
 				}
+			}
+
+			if (cursor != null) {
+				cursor.close();
 			}
 		}
 		return newGroupID;
@@ -488,6 +494,16 @@ public class GroupsTable {
 			numberOfCheckedGroups = UnCheckAllCheckedGroups(context, listID);
 		}
 		return numberOfCheckedGroups;
+	}
+
+	public static void dbxDeleteSingleRecord(Context mContext, String rowIDstring) {
+		// TODO Auto-generated method stub
+
+	}
+
+	public static void dbxDeleteMultipleRecords(Context mContext, Uri uri, String selection, String[] selectionArgs) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

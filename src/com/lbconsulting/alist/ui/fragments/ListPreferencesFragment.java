@@ -22,8 +22,8 @@ import android.widget.TextView;
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.ListsTable;
-import com.lbconsulting.alist.dialogs.ListsDialogFragment;
 import com.lbconsulting.alist.ui.activities.ListColorsActivity;
+import com.lbconsulting.alist.ui.activities.ListsActivity;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
@@ -35,7 +35,7 @@ public class ListPreferencesFragment extends Fragment {
 	private LinearLayout llFragListPreferences;
 	private TextView tvListTitle;
 
-	private Button btnEditListTitle;
+	// private Button btnEditListTitle;
 
 	private RadioButton rbListsViewAlphabetical;
 	private RadioButton rbListsViewGroup;
@@ -43,6 +43,7 @@ public class ListPreferencesFragment extends Fragment {
 	private RadioButton rbListsViewStoreLocation;
 
 	private Switch swDeleteNoteUponClearingItem;
+	private Switch swSyncToDropbox;
 
 	private RadioGroup rbGroupListsView;
 	private RadioGroup rbGroupMasterListsView;
@@ -120,7 +121,7 @@ public class ListPreferencesFragment extends Fragment {
 			llFragListPreferences = (LinearLayout) view.findViewById(R.id.llFragListPreferences);
 			tvListTitle = (TextView) view.findViewById(R.id.tvListTitle);
 
-			btnEditListTitle = (Button) view.findViewById(R.id.btnEditListTitle);
+			// btnEditListTitle = (Button) view.findViewById(R.id.btnEditListTitle);
 
 			rbGroupListsView = (RadioGroup) view.findViewById(R.id.rbGroupListsView);
 			rbGroupMasterListsView = (RadioGroup) view.findViewById(R.id.rbGroupMasterListsView);
@@ -131,6 +132,7 @@ public class ListPreferencesFragment extends Fragment {
 			rbListsViewStoreLocation = (RadioButton) view.findViewById(R.id.rbListsViewStoreLocation);
 
 			swDeleteNoteUponClearingItem = (Switch) view.findViewById(R.id.swDeleteNoteUponClearingItem);
+			swSyncToDropbox = (Switch) view.findViewById(R.id.swSyncToDropbox);
 
 			rbMasterListViewAlphabetical = (RadioButton) view.findViewById(R.id.rbMasterListViewAlphabetical);
 			rbMasterListViewGroup = (RadioButton) view.findViewById(R.id.rbMasterListViewGroup);
@@ -153,10 +155,11 @@ public class ListPreferencesFragment extends Fragment {
 	public void onActivityCreated(Bundle savedInstanceState) {
 		checkListID("onActivityCreated");
 
-		btnEditListTitle.setOnClickListener(buttonClick);
+		// btnEditListTitle.setOnClickListener(buttonClick);
 		btnColors.setOnClickListener(buttonClick);
 
 		swDeleteNoteUponClearingItem.setOnCheckedChangeListener(switchOnCheckedChanged);
+		swSyncToDropbox.setOnCheckedChangeListener(switchOnCheckedChanged);
 
 		getActivity().getActionBar().setTitle("List Preferences");
 
@@ -253,13 +256,13 @@ public class ListPreferencesFragment extends Fragment {
 				ft.commit();
 			}
 			switch (v.getId()) {
-				case R.id.btnEditListTitle:
-					// Toast.makeText(getActivity(), "\"" + "btnEditListTitle" + "\"" + " is under construction.",
-					// Toast.LENGTH_SHORT).show();
-					ListsDialogFragment editListTitleDialog = ListsDialogFragment.newInstance(mActiveListID,
-							ListsDialogFragment.EDIT_LIST_TITLE);
-					editListTitleDialog.show(fm, "dialog_lists_table_update");
-					break;
+			/*				case R.id.btnEditListTitle:
+								// Toast.makeText(getActivity(), "\"" + "btnEditListTitle" + "\"" + " is under construction.",
+								// Toast.LENGTH_SHORT).show();
+								ListsDialogFragment editListTitleDialog = ListsDialogFragment.newInstance(mActiveListID,
+										ListsDialogFragment.EDIT_LIST_TITLE);
+								editListTitleDialog.show(fm, "dialog_lists_table_update");
+								break;*/
 
 				case R.id.btnColors:
 					StartColorsActivity();
@@ -285,11 +288,20 @@ public class ListPreferencesFragment extends Fragment {
 					newFieldValues.put(ListsTable.COL_DELETE_NOTE_UPON_DESELECTING_ITEM, checkedValue);
 					break;
 
+				case R.id.swSyncToDropbox:
+					newFieldValues.put(ListsTable.COL_IS_SYNCED_TO_DROPBOX, checkedValue);
+					if (isChecked) {
+						// start the Lists Activity to initialize dropbox
+						Intent listsActivtyIntent = new Intent(getActivity(), ListsActivity.class);
+						startActivity(listsActivtyIntent);
+					}
+					break;
+
 				default:
 					newFieldValues = null;
 					break;
 			}
-			if (newFieldValues != null) {
+			if (newFieldValues != null && newFieldValues.size() > 0) {
 				listSettings.updateListsTableFieldValues(newFieldValues);
 			}
 		}
@@ -312,11 +324,16 @@ public class ListPreferencesFragment extends Fragment {
 				tvListTitle.setTextColor(listSettings.getTitleTextColor());
 			}
 
+			if (swSyncToDropbox != null) {
+				swSyncToDropbox.setChecked(listSettings.isListSyncedToDropbox());
+				swSyncToDropbox.setTextColor(listSettings.getItemNormalTextColor());
+			}
+
 			if (swDeleteNoteUponClearingItem != null) {
-				// boolean checkedValue = listSettings.getDeleteNoteUponDeselectingItem();
 				swDeleteNoteUponClearingItem.setChecked(listSettings.getDeleteNoteUponDeselectingItem());
 				swDeleteNoteUponClearingItem.setTextColor(listSettings.getItemNormalTextColor());
 			}
+
 			if (rbGroupListsView != null) {
 				rbGroupListsView.setBackgroundColor(listSettings.getListBackgroundColor());
 				int postition = listSettings.getListSortOrder();
@@ -371,9 +388,9 @@ public class ListPreferencesFragment extends Fragment {
 				}
 			}
 
-			if (btnEditListTitle != null) {
-				btnEditListTitle.setTextColor(listSettings.getItemNormalTextColor());
-			}
+			/*			if (btnEditListTitle != null) {
+							btnEditListTitle.setTextColor(listSettings.getItemNormalTextColor());
+						}*/
 
 			if (btnColors != null) {
 				btnColors.setTextColor(listSettings.getItemNormalTextColor());

@@ -21,6 +21,7 @@ import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ManageLocationsPagerAdaptor;
 import com.lbconsulting.alist.classes.AListEvents.ActiveLocationChanged;
 import com.lbconsulting.alist.classes.ListSettings;
+import com.lbconsulting.alist.database.AListContentProvider;
 import com.lbconsulting.alist.database.GroupsTable;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.database.StoresTable;
@@ -49,6 +50,7 @@ public class ManageLocationsActivity extends FragmentActivity {
 		MyLog.i("ManageLocations_ACTIVITY", "onCreate");
 		super.onCreate(savedInstanceState);
 
+		AListContentProvider.setContext(this);
 		EventBus.getDefault().register(this);
 
 		Intent intent = getIntent();
@@ -296,7 +298,7 @@ public class ManageLocationsActivity extends FragmentActivity {
 
 	@Override
 	protected void onDestroy() {
-
+		AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		MyLog.i("ManageLocations_ACTIVITY", "onDestroy");
 		super.onDestroy();

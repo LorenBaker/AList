@@ -151,7 +151,6 @@ public class StoresTable {
 		long newStoreID = -1;
 		if (listID > 1) {
 			// verify that the store does not already exist in the table
-			@SuppressWarnings("resource")
 			Cursor cursor = getStore(context, listID, storeName);
 			if (cursor != null && cursor.getCount() > 0) {
 				// the store exists in the table ... so return its id
@@ -185,6 +184,11 @@ public class StoresTable {
 					MyLog.e("StoresTable", "Error in CreateNewStore; storeName is Null!");
 				}
 			}
+
+			if (cursor != null) {
+				cursor.close();
+			}
+
 			// Fill the bridge table with default location
 			if (newStoreID > 0) {
 				Cursor groupsCursor = GroupsTable.getAllGroupIDsInList(context, listID);
@@ -498,5 +502,15 @@ public class StoresTable {
 		// Note: Bridge Table rows associated with store
 		// have already been deleted by ListTable.DeleteList
 		return numberOfDeletedRecords;
+	}
+
+	public static void dbxDeleteSingleRecord(Context mContext, String rowIDstring) {
+		// TODO Auto-generated method stub
+
+	}
+
+	public static void dbxDeleteMultipleRecords(Context mContext, Uri uri, String selection, String[] selectionArgs) {
+		// TODO Auto-generated method stub
+
 	}
 }

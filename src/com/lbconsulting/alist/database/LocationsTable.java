@@ -1,6 +1,9 @@
 package com.lbconsulting.alist.database;
 
 import java.util.ArrayList;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -19,11 +22,14 @@ public class LocationsTable {
 	// Version 4 changes
 	public static final String TABLE_LOCATIONS = "tblLocations";
 	public static final String COL_LOCATION_ID = "_id";
+	public static final String COL_LOCATION_DROPBOX_ID = "locationDropboxID";
 	public static final String COL_LOCATION_NAME = "locationName";
+	public static final String COL_LOCATION_NUMBER = "locationNumber";
 
 	public static String DEFAULT_LOCATION = "[No LOCATION]";
 
-	public static final String[] PROJECTION_ALL = { COL_LOCATION_ID, COL_LOCATION_NAME };
+	public static final String[] PROJECTION_ALL = { COL_LOCATION_ID, COL_LOCATION_DROPBOX_ID, COL_LOCATION_NAME,
+			COL_LOCATION_NUMBER };
 
 	public static final String CONTENT_PATH = TABLE_LOCATIONS;
 	public static final String CONTENT_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE + "/" + "vnd.lbconsulting."
@@ -32,14 +38,16 @@ public class LocationsTable {
 			+ TABLE_LOCATIONS;
 	public static final Uri CONTENT_URI = Uri.parse("content://" + AListContentProvider.AUTHORITY + "/" + CONTENT_PATH);
 
-	public static final String SORT_ORDER_LOCATION = COL_LOCATION_NAME + " ASC";
+	public static final String SORT_ORDER_LOCATION = COL_LOCATION_NUMBER + " ASC, " + COL_LOCATION_NAME + " ASC";
 
 	// Database creation SQL statements
 	private static final String DATATABLE_CREATE = "create table "
 			+ TABLE_LOCATIONS
 			+ " ("
 			+ COL_LOCATION_ID + " integer primary key autoincrement, "
-			+ COL_LOCATION_NAME + " text collate nocase "
+			+ COL_LOCATION_DROPBOX_ID + " text, "
+			+ COL_LOCATION_NAME + " text collate nocase, "
+			+ COL_LOCATION_NUMBER + " integer"
 			+ ");";
 
 	public static void onCreate(SQLiteDatabase database) {
@@ -83,7 +91,6 @@ public class LocationsTable {
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Create Methods
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
-	@SuppressWarnings("resource")
 	public static long CreateNewLocation(Context context, String locationName) {
 		long newlocationID = -1;
 
@@ -101,10 +108,28 @@ public class LocationsTable {
 				locationName = locationName.trim();
 				if (!locationName.isEmpty()) {
 					try {
-						ContentResolver cr = context.getContentResolver();
-						Uri uri = CONTENT_URI;
 						ContentValues values = new ContentValues();
 						values.put(COL_LOCATION_NAME, locationName);
+
+						// if locationName starts with "Aisle"
+						// parse out any numbers that exist
+						if (locationName.startsWith("Aisle")) {
+							String locationNumber_string = "";
+							Pattern p = Pattern.compile("(\\d+)");
+							Matcher m = p.matcher(locationName);
+							if (m.find()) {
+								MatchResult mr = m.toMatchResult();
+								locationNumber_string = mr.group(1);
+							}
+							if (!locationNumber_string.isEmpty()) {
+								// numbers exist in itemName ...
+								// so insert them into their field so that they will be sorted correctly
+								int locationNumber = Integer.parseInt(locationNumber_string);
+								values.put(COL_LOCATION_NUMBER, locationNumber);
+							}
+						}
+						Uri uri = CONTENT_URI;
+						ContentResolver cr = context.getContentResolver();
 						Uri newListUri = cr.insert(uri, values);
 						if (newListUri != null) {
 							newlocationID = Long.parseLong(newListUri.getLastPathSegment());
@@ -120,6 +145,9 @@ public class LocationsTable {
 			}
 		}
 
+		if (cursor != null) {
+			cursor.close();
+		}
 		return newlocationID;
 	}
 
@@ -227,6 +255,16 @@ public class LocationsTable {
 		BridgeTable.ResetLocationID(context, locationID);
 
 		return numberOfDeletedRecords;
+	}
+
+	public static void dbxDeleteSingleRecord(Context mContext, String rowIDstring) {
+		// TODO Auto-generated method stub
+
+	}
+
+	public static void dbxDeleteMultipleRecords(Context mContext, Uri uri, String selection, String[] selectionArgs) {
+		// TODO Auto-generated method stub
+
 	}
 
 	/*	public static int DeleteAllLocation(Context context) {

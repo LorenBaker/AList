@@ -26,6 +26,7 @@ import com.lbconsulting.alist.classes.AListEvents.ColorPickerColorChange;
 import com.lbconsulting.alist.classes.AListEvents.SetInitialColorPickerColor;
 import com.lbconsulting.alist.classes.AListEvents.SetListSettingsColors;
 import com.lbconsulting.alist.classes.AListEvents.SetPresetColors;
+import com.lbconsulting.alist.database.AListContentProvider;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.ui.fragments.ListColorsPreviewFragment;
 import com.lbconsulting.alist.utilities.MyLog;
@@ -75,6 +76,7 @@ public class ListColorsActivity extends FragmentActivity implements View.OnClick
 
 		setContentView(R.layout.activity_list_colors);
 
+		AListContentProvider.setContext(this);
 		EventBus.getDefault().register(this);
 
 		mPresetsScrollView = (ScrollView) findViewById(R.id.presetsScrollView);
@@ -456,6 +458,7 @@ public class ListColorsActivity extends FragmentActivity implements View.OnClick
 		if (mAllListsCursor != null) {
 			mAllListsCursor.close();
 		}
+		AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}

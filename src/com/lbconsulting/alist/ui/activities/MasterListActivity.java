@@ -21,6 +21,7 @@ import android.view.View;
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ListsSpinnerCursorAdapter;
 import com.lbconsulting.alist.classes.ListSettings;
+import com.lbconsulting.alist.database.AListContentProvider;
 import com.lbconsulting.alist.database.ItemsTable;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.ui.fragments.MasterListFragment;
@@ -45,6 +46,9 @@ public class MasterListActivity extends FragmentActivity implements LoaderManage
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		AListContentProvider.setContext(this);
+
 		setContentView(R.layout.activity_master_list);
 		View view = findViewById(R.id.frag_masterList_placeholder);
 		if (view == null) {
@@ -61,6 +65,22 @@ public class MasterListActivity extends FragmentActivity implements LoaderManage
 		mActionBar = getActionBar();
 		mActionBar.setDisplayShowTitleEnabled(false);
 		mActionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+
+		// set the maximum number of items for free version
+		if (AListUtilities.isFreeVersion()) {
+			Cursor groceryListCursor = ListsTable.getList(this,
+					getResources().getString(R.string.dialog_lists_groceries_list_text));
+			if (groceryListCursor != null) {
+				// we have a Groceries List
+				String[] groceryItems = getResources().getStringArray(R.array.grocery_items);
+				AListUtilities.setMaxNumberOfItems(groceryItems.length
+						+ AListUtilities.getMaxNumberOfItemsSansGroceries());
+				groceryListCursor.close();
+			} else {
+				// there is no Groceries List
+				AListUtilities.setMaxNumberOfItems(AListUtilities.getMaxNumberOfItemsSansGroceries());
+			}
+		}
 
 		mListsSpinnerCursorAdapter = new ListsSpinnerCursorAdapter(this, null, 0);
 
@@ -235,6 +255,7 @@ public class MasterListActivity extends FragmentActivity implements LoaderManage
 	@Override
 	protected void onDestroy() {
 		MyLog.i("MasterList_ACTIVITY", "onDestroy");
+		AListContentProvider.setContext(null);
 		super.onDestroy();
 	}
 

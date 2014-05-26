@@ -20,6 +20,7 @@ import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.StoresPagerAdaptor;
 import com.lbconsulting.alist.classes.AListEvents.RestartStoresActivity;
 import com.lbconsulting.alist.classes.ListSettings;
+import com.lbconsulting.alist.database.AListContentProvider;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.database.StoresTable;
 import com.lbconsulting.alist.dialogs.StoresDialogFragment;
@@ -45,7 +46,9 @@ public class ManageStoresActivity extends FragmentActivity {
 		MyLog.i("Stores_ACTIVITY", "onCreate");
 		super.onCreate(savedInstanceState);
 
+		AListContentProvider.setContext(this);
 		EventBus.getDefault().register(this);
+
 		setContentView(R.layout.activity_stores_pager);
 		mPager = (ViewPager) findViewById(R.id.storesPager);
 		if (mPager == null) {
@@ -273,6 +276,7 @@ public class ManageStoresActivity extends FragmentActivity {
 	protected void onDestroy() {
 		MyLog.i("Stores_ACTIVITY", "onDestroy");
 		// Unregister since the activity is about to be closed.
+		AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}

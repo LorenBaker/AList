@@ -15,6 +15,9 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.Spinner;
 
+import com.lbconsulting.alist.database.ItemsTable;
+import com.lbconsulting.alist.database.ListsTable;
+
 public class AListUtilities {
 
 	public static final int LISTS_LOADER_ID = 1;
@@ -23,39 +26,68 @@ public class AListUtilities {
 	public static final int GROUPS_LOADER_ID = 4;
 	public static final int LOCATIONS_LOADER_ID = 5;
 
-	public final static int LIST_SORT_ALPHABETICAL = 0;
-	public final static int LIST_SORT_BY_GROUP = 1;
-	public final static int LIST_SORT_MANUAL = 2;
-	public final static int LIST_SORT_BY_STORE_LOCATION = 3;
+	public static final int LIST_SORT_ALPHABETICAL = 0;
+	public static final int LIST_SORT_BY_GROUP = 1;
+	public static final int LIST_SORT_MANUAL = 2;
+	public static final int LIST_SORT_BY_STORE_LOCATION = 3;
 
-	public final static int MASTER_LIST_SORT_ALPHABETICAL = 0;
-	public final static int MASTER_LIST_SORT_BY_GROUP = 1;
-	public final static int MASTER_LIST_SORT_BY_LAST_USED = 2;
-	public final static int MASTER_LIST_SORT_SELECTED_AT_TOP = 3;
-	public final static int MASTER_LIST_SORT_SELECTED_AT_BOTTOM = 4;
+	public static final int MASTER_LIST_SORT_ALPHABETICAL = 0;
+	public static final int MASTER_LIST_SORT_BY_GROUP = 1;
+	public static final int MASTER_LIST_SORT_BY_LAST_USED = 2;
+	public static final int MASTER_LIST_SORT_SELECTED_AT_TOP = 3;
+	public static final int MASTER_LIST_SORT_SELECTED_AT_BOTTOM = 4;
 
-	/*public static final int CHECK_ITEMS_FRAGMENT = 1;
-	public static final int COLORS_PREVIEW_FRAGMENT = 2;
-	public static final int CULL_ITEMS_FRAGMENT = 3;
-	public static final int GROUPS_FRAGMENT = 4;
-	public static final int LIST_PREFERENCES_FRAGMENT = 5;
-	public static final int LISTS_FRAGMENT_ID = 6;
-	public static final int MANAGE_LOCATIONS_FRAGMENT = 7;
-	public static final int MAASTER_LIST_FRAGEMENT = 8;
-	public static final int STORES_FRAGMENT = 9;*/
+	// dropbox info
+	public static final String APP_KEY = "obn7vqh7n96lidu";
+	public static final String APP_SECRET = "h6fkey749txt42q";
+	public static final int REQUEST_LINK_TO_DBX = 222; // This value is up to you
 
-	public static final String TAG = "AList";
+	private static final boolean mIsFreeVersion = false;
+
+	public static boolean isFreeVersion() {
+		return mIsFreeVersion;
+	}
+
+	private static final int maxNumberOfItemsSansGroceries = 25;
+
+	public static int getMaxNumberOfItemsSansGroceries() {
+		return maxNumberOfItemsSansGroceries;
+	}
+
+	private static int maxNumberOfItems = -1;
+
+	public static int getMaxNumberOfItems() {
+		return maxNumberOfItems;
+	}
+
+	public static void setMaxNumberOfItems(int maxNumberOfItems) {
+		AListUtilities.maxNumberOfItems = maxNumberOfItems;
+	}
+
+	private static final int maxNumberOfLists = 4;
+
+	public static boolean hasExceededMaxNumberOfItems(Context context) {
+		int numberOfItmes = ItemsTable.getTotalNumberOfItems(context);
+		return numberOfItmes >= maxNumberOfItems;
+	}
+
+	public static boolean hasExceededMaxNumberOfLists(Context context) {
+		int numberOfLists = ListsTable.getNumberOfLists(context);
+		return numberOfLists >= maxNumberOfLists;
+	}
+
+	public static void showExceededMaxNumberOfItemsDialog() {
+
+	}
+
+	private static String TAG = MyLog.TAG;
 
 	public static int boolToInt(boolean b) {
 		return b ? 1 : 0;
 	}
 
 	public static boolean intToBoolean(int value) {
-		if (value == 1) {
-			return true;
-		} else {
-			return false;
-		}
+		return value > 0;
 	}
 
 	public static long boolToLong(boolean b) {

@@ -19,6 +19,7 @@ public class ListsTable {
 	// Version 1
 	public static final String TABLE_LISTS = "tblLists";
 	public static final String COL_LIST_ID = "_id";
+	public static final String COL_LIST_DROPBOX_ID = "listDropboxID";
 	public static final String COL_LIST_TITLE = "listTitle";
 	public static final String COL_ACTIVE_STORE_ID = "activeStoreID";
 	// List Settings
@@ -51,8 +52,10 @@ public class ListsTable {
 	public static final String COL_MASTER_LISTVIEW_TOP = "masterListViewTop";
 
 	public static final String COL_MANAGE_ITEMS_GROUP_ID = "manageItemsGroupID";
+	public static final String COL_IS_SYNCED_TO_DROPBOX = "isSyncedToDropbox";
 
-	public static final String[] PROJECTION_ALL = { COL_LIST_ID, COL_LIST_TITLE, COL_ACTIVE_STORE_ID,
+	public static final String[] PROJECTION_ALL = { COL_LIST_ID, COL_LIST_DROPBOX_ID, COL_LIST_TITLE,
+			COL_ACTIVE_STORE_ID,
 			COL_DELETE_NOTE_UPON_DESELECTING_ITEM,
 			COL_LIST_SORT_ORDER, COL_MASTER_LIST_SORT_ORDER,
 			COL_ALLOW_GROUP_ADDITIONS,
@@ -63,7 +66,7 @@ public class ListsTable {
 			COL_MASTER_LIST_ITEM_SELECTED_TEXT_COLOR,
 			COL_LISTVIEW_FIRST_VISIBLE_POSITION, COL_LISTVIEW_TOP,
 			COL_MASTER_LISTVIEW_FIRST_VISIBLE_POSITION, COL_MASTER_LISTVIEW_TOP,
-			COL_MANAGE_ITEMS_GROUP_ID
+			COL_MANAGE_ITEMS_GROUP_ID, COL_IS_SYNCED_TO_DROPBOX
 	};
 
 	public static final String CONTENT_PATH = TABLE_LISTS;
@@ -82,6 +85,7 @@ public class ListsTable {
 			+ TABLE_LISTS
 			+ " ("
 			+ COL_LIST_ID + " integer primary key autoincrement, "
+			+ COL_LIST_DROPBOX_ID + " text, "
 			+ COL_LIST_TITLE + " text collate nocase, "
 			+ COL_ACTIVE_STORE_ID + " integer not null references "
 			+ StoresTable.TABLE_STORES + " (" + StoresTable.COL_STORE_ID + ") default 1, " // default [No Store]
@@ -115,7 +119,8 @@ public class ListsTable {
 			+ COL_MASTER_LISTVIEW_FIRST_VISIBLE_POSITION + " integer default 0, "
 			+ COL_MASTER_LISTVIEW_TOP + " integer default 0, "
 
-			+ COL_MANAGE_ITEMS_GROUP_ID + " integer default 0"
+			+ COL_MANAGE_ITEMS_GROUP_ID + " integer default 0, "
+			+ COL_IS_SYNCED_TO_DROPBOX + " integer default 0"
 			+ ");";
 
 	public static void onCreate(SQLiteDatabase database) {
@@ -132,17 +137,6 @@ public class ListsTable {
 		ArrayList<String> sqlStatements = new ArrayList<String>();
 		// List 1 used as the default List Preferences
 		sqlStatements.add(insertProjection + "(NULL, 'Default List Preferences')");
-
-		// TODO: remove Groceries and ToDO lists
-		/*
-		 * sqlStatements.add(insertProjection + "(NULL, 'Groceries')");
-		 * sqlStatements.add(insertProjection + "(NULL, 'To Do')");
-		 * sqlStatements.add(insertProjection + "(NULL, 'List 4')");
-		 * sqlStatements.add(insertProjection + "(NULL, 'List 5')");
-		 * sqlStatements.add(insertProjection + "(NULL, 'List 6')");
-		 * sqlStatements.add(insertProjection + "(NULL, 'List 7')");
-		 */
-
 		AListUtilities.execMultipleSQL(database, sqlStatements);
 	}
 
@@ -175,7 +169,6 @@ public class ListsTable {
 			listTitle = listTitle.trim();
 			if (!listTitle.isEmpty()) {
 
-				@SuppressWarnings("resource")
 				Cursor cursor = getList(context, listTitle);
 				if (cursor != null && cursor.getCount() > 0) {
 					// listTitle already exists in the table
@@ -196,6 +189,10 @@ public class ListsTable {
 					} catch (Exception e) {
 						MyLog.e("Exception error in CreateNewList. ", e.toString());
 					}
+				}
+
+				if (cursor != null) {
+					cursor.close();
 				}
 
 			} else {
@@ -375,88 +372,6 @@ public class ListsTable {
 		return result;
 	}
 
-	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// List Preferences Getters and Setters
-	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/*	public static boolean getGroupsAreShownInListsFragment(Context context, long listID) {
-			boolean results = false;
-			Cursor cursor = getList(context, listID);
-			if (cursor != null) {
-				cursor.moveToFirst();
-				int value = cursor.getInt(cursor.getColumnIndexOrThrow(COL_SHOW_GROUPS_IN_LISTS_FRAGMENT));
-				results = AListUtilities.intToBoolean(value);
-				cursor.close();
-			}
-			return results;
-		}*/
-
-	/*
-	 * public static void setGroupsAreShownInListsFragment(Context context, long
-	 * listID, boolean value) { ContentResolver cr =
-	 * context.getContentResolver(); Uri uri = Uri.withAppendedPath(CONTENT_URI,
-	 * String.valueOf(listID));
-	 * 
-	 * ContentValues values = new ContentValues();
-	 * values.put(COL_SHOW_GROUPS_IN_LISTS_FRAGMENT, value); String selection =
-	 * null; String[] selectionArgs = null; int numberOfUpdatedRecords =
-	 * cr.update(uri, values, selection, selectionArgs); if
-	 * (numberOfUpdatedRecords != 1) {
-	 * MyLog.e("ListTitlesTable: setGroupsAreShownInListsFragment",
-	 * "The number of ListTitle records updated does not equal 1!"); } }
-	 */
-
-	/*	public static boolean getGroupsAreShownInMasterListFragment(Context context, long listID) {
-			boolean results = false;
-			Cursor cursor = getList(context, listID);
-			if (cursor != null) {
-				cursor.moveToFirst();
-				int value = cursor.getInt(cursor.getColumnIndexOrThrow(COL_SHOW_GROUPS_IN_MASTER_LIST_FRAGMENT));
-				results = AListUtilities.intToBoolean(value);
-				cursor.close();
-			}
-			return results;
-		}*/
-
-	/*
-	 * public static void setGroupsAreShownInMasterListFragment(Context context,
-	 * long listID, boolean value) { ContentResolver cr =
-	 * context.getContentResolver(); Uri uri = Uri.withAppendedPath(CONTENT_URI,
-	 * String.valueOf(listID));
-	 * 
-	 * ContentValues values = new ContentValues();
-	 * values.put(COL_SHOW_GROUPS_IN_MASTER_LIST_FRAGMENT, value); String
-	 * selection = null; String[] selectionArgs = null; int
-	 * numberOfUpdatedRecords = cr.update(uri, values, selection,
-	 * selectionArgs); if (numberOfUpdatedRecords != 1) {
-	 * MyLog.e("ListTitlesTable: setGroupsAreShownInMasterListFragment",
-	 * "The number of ListTitle records updated does not equal 1!"); } }
-	 */
-
-	/*	public static boolean getStoresAreShown(Context context, long listID) {
-			boolean results = false;
-			Cursor cursor = getList(context, listID);
-			if (cursor != null) {
-				cursor.moveToFirst();
-				int value = cursor.getInt(cursor.getColumnIndexOrThrow(COL_SHOW_STORES));
-				results = AListUtilities.intToBoolean(value);
-				cursor.close();
-			}
-			return results;
-		}*/
-
-	/*
-	 * public static void setStoresAreShown(Context context, long listID,
-	 * boolean value) { ContentResolver cr = context.getContentResolver(); Uri
-	 * uri = Uri.withAppendedPath(CONTENT_URI, String.valueOf(listID));
-	 * 
-	 * ContentValues values = new ContentValues(); values.put(COL_SHOW_STORES,
-	 * value); String selection = null; String[] selectionArgs = null; int
-	 * numberOfUpdatedRecords = cr.update(uri, values, selection,
-	 * selectionArgs); if (numberOfUpdatedRecords != 1) {
-	 * MyLog.e("ListTitlesTable: setStoresAreShown",
-	 * "The number of ListTitle records updated does not equal 1!"); } }
-	 */
-
 	public static boolean getDeleteNoteUponDeslectingItem(Context context, long listID) {
 		boolean results = false;
 		Cursor cursor = getList(context, listID);
@@ -469,120 +384,33 @@ public class ListsTable {
 		return results;
 	}
 
-	/*
-	 * public static void setDeleteNoteUponUnStrikingItem(Context context, long
-	 * listID, boolean value) { ContentResolver cr =
-	 * context.getContentResolver(); Uri uri = Uri.withAppendedPath(CONTENT_URI,
-	 * String.valueOf(listID));
-	 * 
-	 * ContentValues values = new ContentValues();
-	 * values.put(COL_DELETE_NOTE_UPON_DESELECTING_ITEM, value); String
-	 * selection = null; String[] selectionArgs = null; int
-	 * numberOfUpdatedRecords = cr.update(uri, values, selection,
-	 * selectionArgs); if (numberOfUpdatedRecords != 1) {
-	 * MyLog.e("ListTitlesTable: setDeleteNoteUponUnStrikingItem",
-	 * "The number of ListTitle records updated does not equal 1!"); } }
-	 */
-
-	/*	public static int getListPreference(Context context, long listID, String ColumnName) {
-			int intResult = -1;
-			Cursor cursor = getList(context, listID);
+	public static boolean isAnyListSyncedToDropBox(Context context) {
+		boolean syncedToDropbox = false;
+		Cursor cursor = null;
+		Uri uri = CONTENT_URI;
+		String[] projection = new String[] { COL_LIST_ID };
+		String selection = COL_IS_SYNCED_TO_DROPBOX + " = ?";
+		String selectionArgs[] = { String.valueOf(1) };
+		String sortOrder = null;
+		ContentResolver cr = context.getContentResolver();
+		try {
+			cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
+			if (cursor != null && cursor.getCount() > 0) {
+				syncedToDropbox = true;
+			}
+		} catch (Exception e) {
+			MyLog.e("Exception error in ListTitlesTable: getList. ", e.toString());
+		} finally {
 			if (cursor != null) {
-				cursor.moveToFirst();
-				int position = cursor.getColumnIndexOrThrow(ColumnName);
-
-				switch (position) {
-				case 7:
-				case 8:
-				case 9:
-				case 10:
-				case 11:
-				case 12:
-				case 13:
-				case 14:
-				case 15:
-				case 16:
-				case 17:
-				case 18:
-				case 19:
-				case 20:
-					intResult = cursor.getInt(position);
-					break;
-
-				default:
-					break;
-				}
 				cursor.close();
 			}
-			return intResult;
-		}*/
-
-	/*
-	 * public static void setListPreference(Context context, long listID, String
-	 * ColumnName, int value) { if (listID > 1) { ContentResolver cr =
-	 * context.getContentResolver(); Uri uri = Uri.withAppendedPath(CONTENT_URI,
-	 * String.valueOf(listID));
-	 * 
-	 * ContentValues values = new ContentValues(); values.put(ColumnName,
-	 * value); String selection = null; String[] selectionArgs = null; int
-	 * numberOfUpdatedRecords = cr.update(uri, values, selection,
-	 * selectionArgs); if (numberOfUpdatedRecords != 1) {
-	 * MyLog.e("ListTitlesTable: setListPreference",
-	 * "The number of ListPreference records does not equal 1!"); } } }
-	 */
+		}
+		return syncedToDropbox;
+	}
 
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Update Methods
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
-	/*
-	 * public static void UpdateListTitle(Context context, long listID, String
-	 * listTitle) { ContentResolver cr = context.getContentResolver(); Uri uri =
-	 * Uri.withAppendedPath(CONTENT_URI, String.valueOf(listID));
-	 * 
-	 * ContentValues values = new ContentValues(); values.put(COL_LIST_TITLE,
-	 * listTitle); String selection = null; String[] selectionArgs = null; int
-	 * numberOfUpdatedRecords = cr.update(uri, values, selection,
-	 * selectionArgs); if (numberOfUpdatedRecords != 1) {
-	 * MyLog.e("ListTitlesTable: UpdateListTitle",
-	 * "The number of records does not equal 1!"); } }
-	 * 
-	 * public static void UpdateStoreID(Context context, long listID, long
-	 * storeID) { ContentResolver cr = context.getContentResolver(); Uri uri =
-	 * Uri.withAppendedPath(CONTENT_URI, String.valueOf(listID)); ContentValues
-	 * values = new ContentValues(); values.put(COL_STORE_ID, storeID); String
-	 * selection = null; String[] selectionArgs = null; int
-	 * numberOfUpdatedRecords = cr.update(uri, values, selection,
-	 * selectionArgs); if (numberOfUpdatedRecords != 1) {
-	 * MyLog.e("ListTitlesTable: UpdateStoreID",
-	 * "The number of records does not equal 1!"); } }
-	 */
-
-	/*	public static void UpdateDefaultListPreferences(Context context, long listID) {
-			ContentResolver cr = context.getContentResolver();
-
-			Cursor listCursor = getList(context, listID);
-			if (listCursor != null) {
-				listCursor.moveToFirst();
-				ContentValues newDefaultValues = new ContentValues();
-
-				newDefaultValues.put(COL_DELETE_NOTE_UPON_DESELECTING_ITEM,
-						listCursor.getInt(listCursor.getColumnIndexOrThrow(COL_DELETE_NOTE_UPON_DESELECTING_ITEM)));
-
-				newDefaultValues.put(COL_LIST_SORT_ORDER,
-						listCursor.getInt(listCursor.getColumnIndexOrThrow(COL_LIST_SORT_ORDER)));
-				newDefaultValues.put(COL_MASTER_LIST_SORT_ORDER,
-						listCursor.getInt(listCursor.getColumnIndexOrThrow(COL_MASTER_LIST_SORT_ORDER)));
-
-				Uri defaultUri = Uri.withAppendedPath(CONTENT_URI, String.valueOf(1));
-				String selection = null;
-				String[] selectionArgs = null;
-				int numberOfUpdatedRecords = cr.update(defaultUri, newDefaultValues, selection, selectionArgs);
-				if (numberOfUpdatedRecords != 1) {
-					MyLog.e("ListTitlesTable: UpdateDefaultListPreferences", "The number of records does not equal 1!");
-				}
-				listCursor.close();
-			}
-		}*/
 
 	public static int UpdateListsTableFieldValues(Context context, long listID, ContentValues newFieldValues) {
 		int numberOfUpdatedRecords = -1;
@@ -680,6 +508,16 @@ public class ListsTable {
 		ItemsTable.DeleteAllItemsInList(context, listID);
 		StoresTable.DeleteAllStoresInList(context, listID);
 		return numberOfDeletedRecords;
+	}
+
+	public static void dbxDeleteSingleRecord(Context mContext, String rowIDstring) {
+		// TODO Auto-generated method stub
+
+	}
+
+	public static void dbxDeleteMultipleRecords(Context mContext, Uri uri, String selection, String[] selectionArgs) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

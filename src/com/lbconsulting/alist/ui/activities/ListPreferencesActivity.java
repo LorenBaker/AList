@@ -14,6 +14,7 @@ import android.view.View;
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ListPreferencesPagerAdaptor;
 import com.lbconsulting.alist.classes.AListEvents.ListTitleChanged;
+import com.lbconsulting.alist.database.AListContentProvider;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
@@ -36,6 +37,7 @@ public class ListPreferencesActivity extends FragmentActivity {
 
 		setContentView(R.layout.activity_list_preferences_pager);
 
+		AListContentProvider.setContext(this);
 		EventBus.getDefault().register(this);
 
 		View frag_colors_placeholder = this.findViewById(R.id.frag_colors_placeholder);
@@ -172,6 +174,7 @@ public class ListPreferencesActivity extends FragmentActivity {
 	protected void onDestroy() {
 		MyLog.i("ListPreferences_ACTIVITY", "onDestroy");
 		// Unregister since the activity is about to be closed.
+		AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}

@@ -25,6 +25,7 @@ import com.lbconsulting.alist.classes.AListEvents.ListTargetSelected;
 import com.lbconsulting.alist.classes.AListEvents.ManageItemsActiveGroupChanged;
 import com.lbconsulting.alist.classes.AListEvents.ManageItemsTabPostionChange;
 import com.lbconsulting.alist.classes.ListSettings;
+import com.lbconsulting.alist.database.AListContentProvider;
 import com.lbconsulting.alist.database.ItemsTable;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.dialogs.GroupsDialogFragment;
@@ -57,6 +58,8 @@ public class ManageItemsActivity extends FragmentActivity {
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.activity_check_items_pager);
+
+		AListContentProvider.setContext(this);
 		EventBus.getDefault().register(this);
 
 		SharedPreferences storedStates = getSharedPreferences("AList", MODE_PRIVATE);
@@ -502,6 +505,7 @@ public class ManageItemsActivity extends FragmentActivity {
 			mAllListsCursor.close();
 		}
 
+		AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}

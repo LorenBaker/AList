@@ -1,8 +1,12 @@
 package com.lbconsulting.alist.database;
 
 import java.util.Calendar;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -10,6 +14,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.support.v4.content.CursorLoader;
 
+import com.dropbox.sync.android.DbxDatastore;
+import com.dropbox.sync.android.DbxException;
+import com.dropbox.sync.android.DbxRecord;
+import com.dropbox.sync.android.DbxTable;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
@@ -19,7 +27,9 @@ public class ItemsTable {
 	// Version 1
 	public static final String TABLE_ITEMS = "tblItems";
 	public static final String COL_ITEM_ID = "_id";
+	public static final String COL_ITEM_DROPBOX_ID = "dropboxID";
 	public static final String COL_ITEM_NAME = "itemName";
+	public static final String COL_ITEM_NUMBER = "itemNumber";
 	public static final String COL_ITEM_NOTE = "itemNote";
 	public static final String COL_LIST_ID = "listID";
 	public static final String COL_GROUP_ID = "groupID";
@@ -30,7 +40,8 @@ public class ItemsTable {
 	public static final String COL_MANUAL_SORT_SWITCH = "manualSortSwitch";
 	public static final String COL_DATE_TIME_LAST_USED = "dateTimeLastUsed";
 
-	public static final String[] PROJECTION_ALL = { COL_ITEM_ID, COL_ITEM_NAME, COL_ITEM_NOTE, COL_LIST_ID,
+	public static final String[] PROJECTION_ALL = { COL_ITEM_ID, COL_ITEM_DROPBOX_ID, COL_ITEM_NAME, COL_ITEM_NUMBER,
+			COL_ITEM_NOTE, COL_LIST_ID,
 			COL_GROUP_ID, COL_SELECTED, COL_STRUCK_OUT, COL_CHECKED, COL_MANUAL_SORT_ORDER, COL_MANUAL_SORT_SWITCH,
 			COL_DATE_TIME_LAST_USED };
 
@@ -88,8 +99,6 @@ public class ItemsTable {
 	public static final String SORT_ORDER_LAST_USED = COL_DATE_TIME_LAST_USED + " DESC, " + SORT_ORDER_ITEM_NAME;
 	public static final String SORT_ORDER_MANUAL = COL_MANUAL_SORT_ORDER + " ASC";
 
-	// public static final String ITEM_MOVE_BROADCAST_KEY = "itemMoved";
-
 	// TODO: SORT by group name not id!
 	// public static final String SORT_ORDER_BY_GROUP = COL_GROUP_ID + " ASC, "
 	// + SORT_ORDER_ITEM_NAME;
@@ -115,7 +124,9 @@ public class ItemsTable {
 			"create table " + TABLE_ITEMS
 					+ " ("
 					+ COL_ITEM_ID + " integer primary key autoincrement, "
+					+ COL_ITEM_DROPBOX_ID + " text, "
 					+ COL_ITEM_NAME + " text collate nocase, "
+					+ COL_ITEM_NUMBER + " integer, "
 					+ COL_ITEM_NOTE + " text collate nocase, "
 					+ COL_LIST_ID + " integer not null references " + ListsTable.TABLE_LISTS + " ("
 					+ ListsTable.COL_LIST_ID + ") default 1, "
@@ -166,21 +177,12 @@ public class ItemsTable {
 	// Create Methods
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	/**
-	 * This method creates a new item in the provided list.
-	 * 
-	 * @param context
-	 * @param listID
-	 * @param itemName
-	 * @return Returns the new item's ID.
-	 */
 	public static long CreateNewItem(Context context, long listID, String itemName) {
 		long newItemID = -1;
 		if (listID > 1) {
 			itemName = itemName.trim();
 			// verify that the item does not already exist in the table
 			if (itemName != null && !itemName.isEmpty()) {
-				@SuppressWarnings("resource")
 				Cursor cursor = getItem(context, listID, itemName);
 				if (cursor != null && cursor.getCount() > 0) {
 					// the item exists in the table ... so return its id
@@ -205,8 +207,13 @@ public class ItemsTable {
 							UpdateItemFieldValues(context, newItemID, values);
 						}
 					} catch (Exception e) {
-						MyLog.e("Exception error in CreateNewList. ", e.toString());
+						MyLog.e("Exception error in CreateNewList. ", "");
+						e.printStackTrace();
 					}
+				}
+
+				if (cursor != null) {
+					cursor.close();
 				}
 			}
 		}
@@ -238,7 +245,8 @@ public class ItemsTable {
 			try {
 				cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error in ItemsTable: getItem. ", e.toString());
+				MyLog.e("Exception error in ItemsTable: getItem. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursor;
@@ -256,7 +264,8 @@ public class ItemsTable {
 			try {
 				cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error in ItemsTable: getItem. ", e.toString());
+				MyLog.e("Exception error in ItemsTable: getItem. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursor;
@@ -274,14 +283,6 @@ public class ItemsTable {
 		return listID;
 	}
 
-	/**
-	 * This method gets all items in the provided list
-	 * 
-	 * @param context
-	 * @param listID
-	 * @param itemName
-	 * @return Returns all items associated with the provided list ID
-	 */
 	public static CursorLoader getAllItemsInList(Context context, long listID, String sortOrder) {
 		CursorLoader cursorLoader = null;
 		if (listID > 1) {
@@ -292,7 +293,8 @@ public class ItemsTable {
 			try {
 				cursorLoader = new CursorLoader(context, uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllItemsInList. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllItemsInList. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursorLoader;
@@ -312,7 +314,8 @@ public class ItemsTable {
 			try {
 				cursorLoader = new CursorLoader(context, uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllItemsInList. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllItemsInList. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursorLoader;
@@ -334,7 +337,8 @@ public class ItemsTable {
 			try {
 				cursorLoader = new CursorLoader(context, uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllItemsInListWithGroups. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllItemsInListWithGroups. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursorLoader;
@@ -352,20 +356,13 @@ public class ItemsTable {
 			try {
 				cursorLoader = new CursorLoader(context, uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllItemsInListWithLocations. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllItemsInListWithLocations. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursorLoader;
 	}
 
-	/**
-	 * This method gets all items in the provided list that are selected (True) or not selected (False)
-	 * 
-	 * @param context
-	 * @param listID
-	 * @param selected
-	 * @return Returns all selected (or not selected) items in the list.
-	 */
 	public static CursorLoader getAllSelectedItemsInList(Context context, long listID, boolean selected,
 			String sortOrder) {
 		CursorLoader cursorLoader = null;
@@ -378,16 +375,12 @@ public class ItemsTable {
 			String[] projection = PROJECTION_ALL;
 			String selection = COL_LIST_ID + " = ? AND " + COL_SELECTED + " = ?";
 			String selectionArgs[] = new String[] { String.valueOf(listID), String.valueOf(selectedValue) };
-			/* ContentResolver cr = context.getContentResolver(); */
-			try {
 
+			try {
 				cursorLoader = new CursorLoader(context, uri, projection, selection, selectionArgs, sortOrder);
-				/*
-				 * cursor = cr.query(uri, projection, selection, selectionArgs,
-				 * sortOrder);
-				 */
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllSelectedItemsInList. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllSelectedItemsInList. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursorLoader;
@@ -401,14 +394,14 @@ public class ItemsTable {
 			String[] projection = ItemsTable.PROJECTION_WITH_GROUP_NAME;
 			String selection = TABLE_ITEMS + "." + COL_LIST_ID + " = ? AND "
 					+ TABLE_ITEMS + "." + COL_SELECTED + " = ?";
-			// String selection = COL_LIST_ID + " = ? AND " + COL_SELECTED +
-			// " = ?";
+
 			String selectionArgs[] = new String[] { String.valueOf(listID), String.valueOf(selectedValue) };
 			String sortOrder = GroupsTable.SORT_ORDER_GROUP + ", " + ItemsTable.SORT_ORDER_ITEM_NAME;
 			try {
 				cursorLoader = new CursorLoader(context, uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllSelectedItemsInListWithGroups. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllSelectedItemsInListWithGroups. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursorLoader;
@@ -430,7 +423,8 @@ public class ItemsTable {
 			try {
 				cursorLoader = new CursorLoader(context, uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllSelectedItemsInListWithLocations. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllSelectedItemsInListWithLocations. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursorLoader;
@@ -451,7 +445,8 @@ public class ItemsTable {
 			try {
 				cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllSelectedItems. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllSelectedItems. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursor;
@@ -473,7 +468,8 @@ public class ItemsTable {
 			try {
 				cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllSelectedItemsWithGroups. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllSelectedItemsWithGroups. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursor;
@@ -495,42 +491,28 @@ public class ItemsTable {
 			try {
 				cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllSelectedItemsWithLocations. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllSelectedItemsWithLocations. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursor;
 	}
 
-	/**
-	 * This method gets all items in the provided list that are struck out (True) or not struck out (False)
-	 * 
-	 * @param context
-	 * @param listID
-	 * @param struckOut
-	 * @param sortOrder
-	 * @return
-	 */
-	private static Cursor getItems(Context context, long listID) {
+	private static Cursor getAllDbxItemsCursor(Context context) {
 		Cursor cursor = null;
-		if (listID > 1) {
 
-			Uri uri = CONTENT_URI;
-			String[] projection = PROJECTION_ALL;
-			/*
-			 * String selection = COL_LIST_ID + " = ? AND " + COL_STRUCK_OUT +
-			 * " = ?"; String selectionArgs[] = new String[] {
-			 * String.valueOf(listID), String.valueOf(struckOutValue) };
-			 */
+		Uri uri = CONTENT_URI;
+		String[] projection = new String[] { COL_ITEM_ID, COL_ITEM_DROPBOX_ID };
 
-			String selection = COL_LIST_ID + " = ? ";
-			String selectionArgs[] = { String.valueOf(listID) };
+		String selection = COL_ITEM_DROPBOX_ID + " != '' OR " + COL_ITEM_DROPBOX_ID + " NOT NULL";
+		String selectionArgs[] = null;
 
-			ContentResolver cr = context.getContentResolver();
-			try {
-				cursor = cr.query(uri, projection, selection, selectionArgs, SORT_ORDER_ITEM_NAME);
-			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getItems. ", e.toString());
-			}
+		ContentResolver cr = context.getContentResolver();
+		try {
+			cursor = cr.query(uri, projection, selection, selectionArgs, SORT_ORDER_ITEM_NAME);
+		} catch (Exception e) {
+			MyLog.e("Exception error  in getAllDbxItemsCursor: getItems. ", "");
+			e.printStackTrace();
 		}
 		return cursor;
 	}
@@ -547,7 +529,8 @@ public class ItemsTable {
 			try {
 				cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllItemsWithGroups. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllItemsWithGroups. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursor;
@@ -566,9 +549,20 @@ public class ItemsTable {
 		try {
 			cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
 		} catch (Exception e) {
-			MyLog.e("Exception error  in ItemsTable: getAllItems. ", e.toString());
+			MyLog.e("Exception error  in ItemsTable: getAllItems. ", "");
+			e.printStackTrace();
 		}
 		return cursor;
+	}
+
+	public static int getTotalNumberOfItems(Context context) {
+		int totalNumberOfItems = 0;
+		Cursor cursor = getAllItems(context);
+		if (cursor != null) {
+			totalNumberOfItems = cursor.getCount();
+			cursor.close();
+		}
+		return totalNumberOfItems;
 	}
 
 	public static Cursor getAllCheckedItemsInList(Context context, long listID, boolean checked) {
@@ -585,7 +579,8 @@ public class ItemsTable {
 			try {
 				cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
 			} catch (Exception e) {
-				MyLog.e("Exception error  in ItemsTable: getAllCheckedItemsInList. ", e.toString());
+				MyLog.e("Exception error  in ItemsTable: getAllCheckedItemsInList. ", "");
+				e.printStackTrace();
 			}
 		}
 		return cursor;
@@ -601,55 +596,6 @@ public class ItemsTable {
 		return numberOfCheckedItmes;
 	}
 
-	/**
-	 * This method gets all items in the provided group.
-	 * 
-	 * @param context
-	 * @param groupID
-	 * @return
-	 */
-	/*
-	 * public static Cursor getAllItemsInGroup(Context context, long groupID,
-	 * String sortOrder) { Cursor cursor = null; if (groupID > 0) { if
-	 * (sortOrder == null) { sortOrder = SORT_ORDER_ITEM_NAME; } Uri uri =
-	 * CONTENT_URI; String[] projection = PROJECTION_ALL; String selection =
-	 * COL_GROUP_ID + " = ?"; String[] selectionArgs = { String.valueOf(groupID)
-	 * }; ContentResolver cr = context.getContentResolver(); try { cursor =
-	 * cr.query(uri, projection, selection, selectionArgs, sortOrder); } catch
-	 * (Exception e) {
-	 * MyLog.e("Exception error in ItemsTable: getAllItemsInGroup. ",
-	 * e.toString()); } } return cursor; }
-	 */
-
-	/**
-	 * This method gets all items in the provided group that are selected (True) or not selected (False).
-	 * 
-	 * @param context
-	 * @param groupID
-	 * @param selected
-	 * @return
-	 */
-	/*	public static Cursor getAllSelectedItemsInGroup(Context context, long groupID, boolean selected, String sortOrder) {
-			Cursor cursor = null;
-			if (groupID > 0) {
-				int selectedValue = AListUtilities.boolToInt(selected);
-				if (sortOrder == null) {
-					sortOrder = SORT_ORDER_ITEM_NAME;
-				}
-				Uri uri = CONTENT_URI;
-				String[] projection = PROJECTION_ALL;
-				String selection = COL_GROUP_ID + " = ? AND " + COL_SELECTED + " = ?";
-				String[] selectionArgs = { String.valueOf(groupID), String.valueOf(selectedValue) };
-				ContentResolver cr = context.getContentResolver();
-				try {
-					cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
-				} catch (Exception e) {
-					MyLog.e("Exception error in ItemsTable: getAllSelectedItemsInGroup. ", e.toString());
-				}
-			}
-			return cursor;
-		}*/
-
 	public static boolean isItemSwitched(Context context, long itemID) {
 		boolean result = false;
 		Cursor itemCursor = getItem(context, itemID);
@@ -663,20 +609,6 @@ public class ItemsTable {
 		}
 		return result;
 	}
-
-	/*	public static boolean isItemVisible(Context context, long itemID) {
-			boolean result = false;
-			Cursor itemCursor = getItem(context, itemID);
-			if (itemCursor != null) {
-				itemCursor.moveToFirst();
-				int switchValue = itemCursor.getInt(itemCursor.getColumnIndexOrThrow(COL_MANUAL_SORT_SWITCH));
-				if (switchValue > 0) {
-					result = true;
-				}
-				itemCursor.close();
-			}
-			return result;
-		}*/
 
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Update Methods
@@ -706,43 +638,6 @@ public class ItemsTable {
 		UpdateItemFieldValues(context, itemID, newFieldValues);
 	}
 
-	/*
-	 * public static int UpdateItemName(Context context, long itemID, String
-	 * newItemName) { int numberOfUpdatedRecords = -1; if (itemID > 0) {
-	 * newItemName = newItemName.trim(); try { ContentResolver cr =
-	 * context.getContentResolver(); Uri uri = CONTENT_URI; String where =
-	 * COL_ITEM_ID + " = ?"; String[] whereArgs = { String.valueOf(itemID) };
-	 * ContentValues values = new ContentValues(); values.put(COL_ITEM_NAME,
-	 * newItemName); numberOfUpdatedRecords = cr.update(uri, values, where,
-	 * whereArgs); } catch (Exception e) {
-	 * MyLog.e("Exception error in UpdateItemName. ", e.toString()); } } return
-	 * numberOfUpdatedRecords; }
-	 * 
-	 * public static int UpdateItemNote(Context context, long itemID, String
-	 * newItemNote) { int numberOfUpdatedRecords = -1; if (itemID > 0) {
-	 * newItemNote = newItemNote.trim(); try { ContentResolver cr =
-	 * context.getContentResolver(); Uri uri = CONTENT_URI; String where =
-	 * COL_ITEM_ID + " = ?"; String[] whereArgs = { String.valueOf(itemID) };
-	 * ContentValues values = new ContentValues(); values.put(COL_ITEM_NOTE,
-	 * newItemNote); numberOfUpdatedRecords = cr.update(uri, values, where,
-	 * whereArgs); } catch (Exception e) {
-	 * MyLog.e("Exception error in UpdateItemNote. ", e.toString()); } } return
-	 * numberOfUpdatedRecords; }
-	 */
-
-	/*
-	 * public static int ChangeGroupID(Context context, long itemID, long
-	 * newGroupID) { int numberOfUpdatedRecords = -1; if (itemID > 0 &&
-	 * newGroupID > 0) { try { ContentResolver cr =
-	 * context.getContentResolver(); Uri uri = CONTENT_URI; String where =
-	 * COL_ITEM_ID + " = ?"; String[] whereArgs = { String.valueOf(itemID) };
-	 * ContentValues values = new ContentValues(); values.put(COL_GROUP_ID,
-	 * newGroupID); numberOfUpdatedRecords = cr.update(uri, values, where,
-	 * whereArgs); } catch (Exception e) {
-	 * MyLog.e("Exception error in ChangeGroupID. ", e.toString()); } } return
-	 * numberOfUpdatedRecords; }
-	 */
-
 	public static int UpdateItem(Context context, long itemID, String itemName, String itemNote, long itemGroupID) {
 		int numberOfUpdatedRecords = -1;
 		if (itemID > 0) {
@@ -759,7 +654,8 @@ public class ItemsTable {
 				values.put(COL_GROUP_ID, itemGroupID);
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in UpdateItem. ", e.toString());
+				MyLog.e("Exception error in UpdateItem. ", "");
+				e.printStackTrace();
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -784,7 +680,9 @@ public class ItemsTable {
 				values.put(COL_SELECTED, selectedValue);
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in SelectItem. ", e.toString());
+				MyLog.e("Exception error in SelectItem. ", "");
+				e.printStackTrace();
+
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -807,7 +705,8 @@ public class ItemsTable {
 				}
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in DeselectAllItemsInList. ", e.toString());
+				MyLog.e("Exception error in DeselectAllItemsInList. ", "");
+				e.printStackTrace();
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -826,7 +725,8 @@ public class ItemsTable {
 				values.put(COL_SELECTED, SELECTED_FALSE);
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in DeselectAllItemsInGroup. ", e.toString());
+				MyLog.e("Exception error in DeselectAllItemsInGroup. ", "");
+				e.printStackTrace();
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -883,7 +783,8 @@ public class ItemsTable {
 				values.put(COL_STRUCK_OUT, struckOutValue);
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in StrikeItem. ", e.toString());
+				MyLog.e("Exception error in StrikeItem. ", "");
+				e.printStackTrace();
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -907,7 +808,8 @@ public class ItemsTable {
 				}
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in UnStrikeAllItemsInList. ", e.toString());
+				MyLog.e("Exception error in UnStrikeAllItemsInList. ", "");
+				e.printStackTrace();
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -926,7 +828,8 @@ public class ItemsTable {
 				values.put(COL_STRUCK_OUT, SELECTED_FALSE);
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in UnStrikeAllItemsInGroup. ", e.toString());
+				MyLog.e("Exception error in UnStrikeAllItemsInGroup. ", "");
+				e.printStackTrace();
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -946,7 +849,8 @@ public class ItemsTable {
 				values.put(COL_CHECKED, checkedValue);
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in ItemsTable: CheckItem. ", e.toString());
+				MyLog.e("Exception error in ItemsTable: CheckItem. ", "");
+				e.printStackTrace();
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -965,7 +869,8 @@ public class ItemsTable {
 				values.put(COL_CHECKED, CHECKED_FALSE);
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in UnCheckAllItemsInList. ", e.toString());
+				MyLog.e("Exception error in UnCheckAllItemsInList. ", "");
+				e.printStackTrace();
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -985,7 +890,8 @@ public class ItemsTable {
 				values.put(COL_CHECKED, CHECKED_FALSE);
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in ApplyGroupToManageItems. ", e.toString());
+				MyLog.e("Exception error in ApplyGroupToManageItems. ", "");
+				e.printStackTrace();
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -1011,65 +917,6 @@ public class ItemsTable {
 		}
 		return numberOfCheckedItems;
 	}
-
-	/*
-	 * public static void TrialUsedTimes(Context context, long listID) {
-	 * Calendar now = Calendar.getInstance(); long minus91days =
-	 * now.getTimeInMillis() - (91 * milliSecondsPerDay); long minus181days =
-	 * now.getTimeInMillis() - (181 * milliSecondsPerDay); long minus366days =
-	 * now.getTimeInMillis() - (366 * milliSecondsPerDay); long minus91days =
-	 * Long.valueOf(123456); long minus181days = Long.valueOf(234567); long
-	 * minus366days = Long.valueOf(345678);
-	 * 
-	 * //Cursor cursor = getItems(context, listID);
-	 * 
-	 * //if (cursor != null) { //cursor.moveToPosition(-1);
-	 * 
-	 * ContentValues values = new ContentValues();
-	 * values.put(COL_DATE_TIME_LAST_USED, minus366days);
-	 * UpdateItemFieldValues(context, 1, values);
-	 * 
-	 * values = new ContentValues(); values.put(COL_DATE_TIME_LAST_USED,
-	 * minus366days); UpdateItemFieldValues(context, 2, values); values = new
-	 * ContentValues(); values.put(COL_DATE_TIME_LAST_USED, minus366days);
-	 * UpdateItemFieldValues(context, 3, values); values = new ContentValues();
-	 * values.put(COL_DATE_TIME_LAST_USED, minus366days);
-	 * UpdateItemFieldValues(context, 4, values);
-	 * 
-	 * values = new ContentValues(); values.put(COL_DATE_TIME_LAST_USED,
-	 * minus181days); UpdateItemFieldValues(context, 5, values); values = new
-	 * ContentValues(); values.put(COL_DATE_TIME_LAST_USED, minus181days);
-	 * UpdateItemFieldValues(context, 6, values); values = new ContentValues();
-	 * values.put(COL_DATE_TIME_LAST_USED, minus181days);
-	 * UpdateItemFieldValues(context, 7, values); values = new ContentValues();
-	 * values.put(COL_DATE_TIME_LAST_USED, minus181days);
-	 * UpdateItemFieldValues(context, 8, values);
-	 * 
-	 * values = new ContentValues(); values.put(COL_DATE_TIME_LAST_USED,
-	 * minus91days); UpdateItemFieldValues(context, 9, values); values = new
-	 * ContentValues(); values.put(COL_DATE_TIME_LAST_USED, minus91days);
-	 * UpdateItemFieldValues(context, 10, values); values = new ContentValues();
-	 * values.put(COL_DATE_TIME_LAST_USED, minus91days);
-	 * UpdateItemFieldValues(context, 11, values); values = new ContentValues();
-	 * values.put(COL_DATE_TIME_LAST_USED, minus91days);
-	 * UpdateItemFieldValues(context, 12, values);
-	 * 
-	 * for (int i = 0; i < 4; i++) { cursor.moveToNext(); long itemID =
-	 * cursor.getLong(cursor.getColumnIndexOrThrow(COL_ITEM_ID));
-	 * UpdateItemFieldValues(context, itemID, values); }
-	 * 
-	 * values = new ContentValues(); values.put(COL_DATE_TIME_LAST_USED,
-	 * minus181days); for (int i = 0; i < 4; i++) { cursor.moveToNext(); long
-	 * itemID = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ITEM_ID));
-	 * UpdateItemFieldValues(context, itemID, values); }
-	 * 
-	 * values = new ContentValues(); values.put(COL_DATE_TIME_LAST_USED,
-	 * minus91days); for (int i = 0; i < 4; i++) { cursor.moveToNext(); long
-	 * itemID = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ITEM_ID));
-	 * UpdateItemFieldValues(context, itemID, values); } //cursor.close(); //}
-	 * 
-	 * }
-	 */
 
 	public static void SwapManualSortOrder(Context context, long mobileItemID, long switchItemID,
 			long previousSwitchItemID) {
@@ -1127,7 +974,8 @@ public class ItemsTable {
 								+ switchItemName + "(" + switchItemManualSortOrder + ")");
 
 			} catch (Exception e) {
-				MyLog.e("Exception error in ItemsTable: CheckItem. ", e.toString());
+				MyLog.e("Exception error in ItemsTable: CheckItem. ", "");
+				e.printStackTrace();
 			}
 		}
 	}
@@ -1147,13 +995,11 @@ public class ItemsTable {
 					existingItemName = existingItemCursor
 							.getString(existingItemCursor.getColumnIndexOrThrow(COL_ITEM_NAME));
 
-					// verify that the item does not already exist in the new
-					// list
+					// verify that the item does not already exist in the new list
 					newListCursor = getItem(context, newListID, existingItemName);
 					if (newListCursor != null) {
 						if (newListCursor.getCount() == 0) {
-							// the item does not exists in the table ... so move
-							// it
+							// the item does not exists in the table ... so move it
 							// by changing the listID
 							numberOfUpdatedRecords = ChangeListID(context, itemID, newListID);
 
@@ -1245,7 +1091,8 @@ public class ItemsTable {
 				values.put(COL_MANUAL_SORT_ORDER, manualSortOrder);
 				numberOfUpdatedRecords = cr.update(uri, values, where, whereArgs);
 			} catch (Exception e) {
-				MyLog.e("Exception error in setManualSortOrder. ", e.toString());
+				MyLog.e("Exception error in setManualSortOrder. ", "");
+				e.printStackTrace();
 			}
 		}
 		return numberOfUpdatedRecords;
@@ -1340,6 +1187,590 @@ public class ItemsTable {
 			numberOfDeletedRecords = cr.delete(uri, where, selectionArgs);
 		}
 		return numberOfDeletedRecords;
+	}
+
+	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// SQLite Methods that use Dropbox records
+	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	public static long CreateItem(Context context, DbxRecord dbxRecord) {
+		// a check to see if the item is already in the database
+		// was done prior to making this call ... so don't repeat it.
+		long newItemID = -1;
+
+		ContentValues newFieldValues = setContentValues(dbxRecord);
+		Uri uri = CONTENT_URI;
+		ContentResolver cr = context.getContentResolver();
+		Uri newItemUri = cr.insert(uri, newFieldValues);
+		if (newItemUri != null) {
+			newItemID = Long.parseLong(newItemUri.getLastPathSegment());
+		}
+		return newItemID;
+	}
+
+	public static Cursor getItemFromDropboxID(Context context, String dbxRecordID) {
+		Uri uri = CONTENT_URI;
+		String[] projection = PROJECTION_ALL;
+		String selection = COL_ITEM_DROPBOX_ID + " = '" + dbxRecordID + "'";
+		String selectionArgs[] = null;
+		String sortOrder = SORT_ORDER_ITEM_NAME;
+
+		ContentResolver cr = context.getContentResolver();
+		Cursor cursor = null;
+		try {
+			cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
+		} catch (Exception e) {
+			MyLog.e("ItemsTable", "Exception error in getItemFromDropboxID:");
+			e.printStackTrace();
+		}
+		return cursor;
+	}
+
+	public static Uri getItemUri(Context context, String dbxRecordID) {
+		Uri itemUri = null;
+		Cursor cursor = getItemFromDropboxID(context, dbxRecordID);
+		if (cursor != null) {
+			cursor.moveToFirst();
+			long itemID = cursor.getLong(cursor.getColumnIndexOrThrow(COL_ITEM_ID));
+			itemUri = ContentUris.withAppendedId(ItemsTable.CONTENT_URI, itemID);
+			cursor.close();
+		}
+		return itemUri;
+	}
+
+	public static String getDropboxID(Context context, long itemID) {
+		String dbxID = "";
+		Cursor cursor = getItem(context, itemID);
+		if (cursor != null) {
+			if (cursor.getCount() > 0) {
+				cursor.moveToFirst();
+				dbxID = cursor.getString(cursor.getColumnIndexOrThrow(COL_ITEM_DROPBOX_ID));
+			}
+			cursor.close();
+		}
+
+		return dbxID;
+	}
+
+	public static int UpdateItem(Context context, String dbxRecordID, DbxRecord dbxRecord) {
+		int numberOfUpdatedRecords = -1;
+		ContentResolver cr = context.getContentResolver();
+		Uri itemUri = getItemUri(context, dbxRecordID);
+		ContentValues newFieldValues = setContentValues(dbxRecord);
+		String selection = null;
+		String[] selectionArgs = null;
+		numberOfUpdatedRecords = cr.update(itemUri, newFieldValues, selection, selectionArgs);
+
+		return numberOfUpdatedRecords;
+	}
+
+	public static int DeleteItem(Context context, String dbxRecordID) {
+		int numberOfDeletedRecords = -1;
+
+		Uri itemUri = getItemUri(context, dbxRecordID);
+		ContentResolver cr = context.getContentResolver();
+		String where = null;
+		String[] selectionArgs = null;
+		numberOfDeletedRecords = cr.delete(itemUri, where, selectionArgs);
+
+		return numberOfDeletedRecords;
+	}
+
+	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Dropbox Datastore Methods
+	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	public static void dbxInsert(Context context, DbxDatastore dbxDatastore, long newRowID, ContentValues values) {
+
+		if (dbxDatastore != null) {
+			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
+
+			if (dbxActiveTable != null) {
+				Calendar now = Calendar.getInstance();
+				long nowMillis = now.getTimeInMillis();
+
+				DbxRecord newItemRecord = null;
+				Set<Entry<String, Object>> s = values.valueSet();
+				Iterator<Entry<String, Object>> itr = s.iterator();
+				while (itr.hasNext()) {
+					Entry<String, Object> me = itr.next();
+					String key = me.getKey().toString();
+
+					if (key.equals(COL_ITEM_NAME)) {
+						String itemName = (String) me.getValue();
+						newItemRecord = dbxActiveTable.insert()
+								.set(key, itemName)
+								.set(COL_ITEM_NUMBER, -1)
+								.set(COL_ITEM_NOTE, "")
+								.set(COL_LIST_ID, 1)
+								.set(COL_GROUP_ID, 1)
+								.set(COL_SELECTED, false)
+								.set(COL_STRUCK_OUT, false)
+								.set(COL_CHECKED, false)
+								.set(COL_MANUAL_SORT_ORDER, -1)
+								.set(COL_MANUAL_SORT_SWITCH, 1)
+								.set(COL_DATE_TIME_LAST_USED, -1);
+
+						// update the SQLite record with the dbxID and nowMillis
+						AListContentProvider.setSuppressDropboxChanges(true);
+						String dbxID = newItemRecord.getId();
+						ContentValues newFieldValues = new ContentValues();
+						newFieldValues.put(COL_ITEM_DROPBOX_ID, dbxID);
+						newFieldValues.put(COL_DATE_TIME_LAST_USED, nowMillis);
+						UpdateItemFieldValues(context, newRowID, newFieldValues);
+
+						MyLog.d("ItemsTable: dbxInsert ", "Key:" + key + ", value:" + itemName);
+						AListContentProvider.setSuppressDropboxChanges(false);
+
+						// TODO: only needed for Locations Table!!!!!!!!
+					} else if (key.equals(COL_ITEM_NUMBER)) {
+						int itemNumber = (Integer) me.getValue();
+						if (newItemRecord != null) {
+							newItemRecord.set(key, itemNumber);
+							MyLog.d("ItemsTable: dbxInsert ", "Key:" + key + ", value:" + itemNumber);
+						}
+					}
+				}
+
+				try {
+					// update the dbx record with nowMillis
+					if (newItemRecord != null) {
+						newItemRecord.set(COL_DATE_TIME_LAST_USED, nowMillis);
+					}
+					dbxDatastore.sync();
+				} catch (DbxException e) {
+					MyLog.e("ItemsTable: dbxInsert ", "DbxException while trying dbxDatastore.sync().");
+					e.printStackTrace();
+				}
+			}
+		} else {
+			MyLog.e("ItemsTable: dbxInsert ", "Unable to insert record. dbxDatastore is null!");
+		}
+
+	}
+
+	public static void dbxDeleteSingleRecord(Context context, DbxDatastore dbxDatastore, String itemIDstring) {
+		if (dbxDatastore != null) {
+			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
+
+			String dbxRecordID = getDropboxID(context, Long.parseLong(itemIDstring));
+			if (!dbxRecordID.isEmpty()) {
+				try {
+					DbxRecord dbxRecord = dbxActiveTable.get(dbxRecordID);
+					if (dbxRecord != null) {
+						dbxRecord.deleteRecord();
+						dbxDatastore.sync();
+					}
+				} catch (DbxException e) {
+					MyLog.e("ItemsTable: dbxDeleteSingleRecord ", "DbxException while trying delete a dropbox record.");
+				}
+			}
+		} else {
+			MyLog.e("ItemsTable: dbxDeleteSingleRecord ", "Unable to delete record. dbxDatastore is null!");
+		}
+	}
+
+	public static void dbxDeleteMultipleRecords(Context context, DbxDatastore dbxDatastore, Uri uri, String selection,
+			String[] selectionArgs) {
+
+		if (dbxDatastore != null) {
+			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
+
+			if (dbxActiveTable != null) {
+				String projection[] = { COL_ITEM_ID, COL_ITEM_DROPBOX_ID };
+				String sortOrder = null;
+				String dbxID;
+				DbxRecord dbxRecord;
+				ContentResolver cr = context.getContentResolver();
+				Cursor cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
+				if (cursor != null) {
+					try {
+						while (cursor.moveToNext()) {
+							dbxID = cursor.getString(cursor.getColumnIndexOrThrow(COL_ITEM_DROPBOX_ID));
+							dbxRecord = dbxActiveTable.get(dbxID);
+							if (dbxRecord != null) {
+								dbxRecord.deleteRecord();
+							}
+						}
+
+						dbxDatastore.sync();
+					} catch (DbxException e) {
+						MyLog.e("ItemsTable: dbxDeleteMultipleRecords ", "DbxException while trying dropbox records.");
+						e.printStackTrace();
+
+					} finally {
+						cursor.close();
+					}
+				}
+			}
+		} else {
+			MyLog.e("ItemsTable: dbxDeleteMultipleRecords ", "Unable to delete records. dbxDatastore is null!");
+		}
+	}
+
+	public static void dbxDeleteAllRecords(DbxDatastore dbxDatastore) {
+		if (dbxDatastore != null) {
+			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
+			if (dbxActiveTable != null) {
+				try {
+					DbxTable.QueryResult allRecords = dbxActiveTable.query();
+					Iterator<DbxRecord> itr = allRecords.iterator();
+					while (itr.hasNext()) {
+						DbxRecord dbxRecord = itr.next();
+						dbxRecord.deleteRecord();
+					}
+
+					dbxDatastore.sync();
+
+				} catch (DbxException e) {
+					MyLog.e("ItemsTable: dbxDeleteAllRecords ", "DbxException while deleteing all dropbox records.");
+					e.printStackTrace();
+				}
+			}
+		} else {
+			MyLog.e("ItemsTable: dbxDeleteAllRecords ", "Unable to delete records. dbxDatastore is null!");
+		}
+	}
+
+	public static int sqlDeleteAllRecords(Context context) {
+		int numberOfDeletedRecords = -1;
+
+		Uri uri = CONTENT_URI;
+		String where = null;
+		String selectionArgs[] = null;
+		ContentResolver cr = context.getContentResolver();
+		numberOfDeletedRecords = cr.delete(uri, where, selectionArgs);
+
+		return numberOfDeletedRecords;
+	}
+
+	public static void dbxUpdateMultipleRecords(Context context, DbxDatastore dbxDatastore, ContentValues values,
+			Uri uri, String selection, String[] selectionArgs) {
+
+		if (dbxDatastore != null) {
+			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
+
+			if (dbxActiveTable != null) {
+				String projection[] = { COL_ITEM_ID, COL_ITEM_DROPBOX_ID };
+				String sortOrder = null;
+				String dbxID;
+				DbxRecord dbxRecord;
+				ContentResolver cr = context.getContentResolver();
+				Cursor cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
+				if (cursor != null) {
+					try {
+						while (cursor.moveToNext()) {
+							dbxID = cursor.getString(cursor.getColumnIndexOrThrow(COL_ITEM_DROPBOX_ID));
+							dbxRecord = dbxActiveTable.get(dbxID);
+							if (dbxRecord != null) {
+								setDbxRecordValues(dbxRecord, values);
+							}
+						}
+
+						dbxDatastore.sync();
+					} catch (DbxException e) {
+						MyLog.e("ItemsTable: dbxUpdateMultipleRecords ", "DbxException while trying update records.");
+						e.printStackTrace();
+
+					} finally {
+						cursor.close();
+					}
+				}
+			}
+		} else {
+			MyLog.e("ItemsTable: dbxUpdateMultipleRecords ", "Unable to update records. dbxDatastore is null!");
+		}
+	}
+
+	public static void dbxUpdateSingleRecord(Context context, DbxDatastore dbxDatastore, ContentValues values, Uri uri) {
+		if (dbxDatastore != null) {
+			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
+
+			if (dbxActiveTable != null) {
+				String rowIDstring = uri.getLastPathSegment();
+				String dbxRecordID = getDropboxID(context, Long.parseLong(rowIDstring));
+				if (!dbxRecordID.isEmpty()) {
+					try {
+						DbxRecord dbxRecord = dbxActiveTable.get(dbxRecordID);
+						if (dbxRecord != null) {
+							setDbxRecordValues(dbxRecord, values);
+							dbxDatastore.sync();
+						} else {
+							// the dbxItem has been deleted ...
+							// but for some reason it has not been deleted from the sql database
+							// so delete it now.
+							sqlDeleteItemAlreadyDeletedFromDropbox(context, dbxRecordID);
+							// sync to hopefully capture other dropbox changes
+							dbxDatastore.sync();
+						}
+
+					} catch (DbxException e) {
+						MyLog.e("ItemsTable: dbxUpdateSingleRecord ", "DbxException while trying update records.");
+						e.printStackTrace();
+					}
+				}
+			}
+		} else {
+			MyLog.e("ItemsTable: dbxUpdateSingleRecord ", "Unable to update record. dbxDatastore is null!");
+		}
+	}
+
+	private static void sqlDeleteItemAlreadyDeletedFromDropbox(Context context, String dbxRecordID) {
+		AListContentProvider.setSuppressDropboxChanges(true);
+		DeleteItem(context, dbxRecordID);
+		AListContentProvider.setSuppressDropboxChanges(false);
+	}
+
+	private static ContentValues setContentValues(DbxRecord dbxRecord) {
+		ContentValues newFieldValues = new ContentValues();
+
+		/*		.set(key, itemName)
+				.set(COL_ITEM_NUMBER, -1)
+				.set(COL_ITEM_NOTE, "")
+				.set(COL_LIST_ID, 1)
+				.set(COL_GROUP_ID, 1)
+				.set(COL_SELECTED, false)
+				.set(COL_STRUCK_OUT, false)
+				.set(COL_CHECKED, false)
+				.set(COL_MANUAL_SORT_ORDER, -1)
+				.set(COL_MANUAL_SORT_SWITCH, 1)
+				.set(COL_DATE_TIME_LAST_USED, -1);*/
+
+		if (dbxRecord != null) {
+			String dbxID = dbxRecord.getId();
+			newFieldValues.put(COL_ITEM_DROPBOX_ID, dbxID);
+
+			if (dbxRecord.hasField(COL_ITEM_NAME)) {
+				String itemName = dbxRecord.getString(COL_ITEM_NAME);
+				newFieldValues.put(COL_ITEM_NAME, itemName);
+			}
+
+			if (dbxRecord.hasField(COL_ITEM_NUMBER)) {
+				int itemNumber = (int) dbxRecord.getLong(COL_ITEM_NUMBER);
+				newFieldValues.put(COL_ITEM_NUMBER, itemNumber);
+			}
+
+			if (dbxRecord.hasField(COL_ITEM_NOTE)) {
+				String itemNote = dbxRecord.getString(COL_ITEM_NOTE);
+				newFieldValues.put(COL_ITEM_NOTE, itemNote);
+			}
+
+			if (dbxRecord.hasField(COL_LIST_ID)) {
+				long listID = dbxRecord.getLong(COL_LIST_ID);
+				newFieldValues.put(COL_LIST_ID, listID);
+			}
+			if (dbxRecord.hasField(COL_GROUP_ID)) {
+				long groupID = dbxRecord.getLong(COL_GROUP_ID);
+				newFieldValues.put(COL_GROUP_ID, groupID);
+			}
+
+			if (dbxRecord.hasField(COL_SELECTED)) {
+				boolean selected = dbxRecord.getBoolean(COL_SELECTED);
+				int selectedValue = 0;
+				if (selected) {
+					selectedValue = 1;
+				}
+				newFieldValues.put(COL_SELECTED, selectedValue);
+			}
+
+			if (dbxRecord.hasField(COL_STRUCK_OUT)) {
+				boolean struckOut = dbxRecord.getBoolean(COL_STRUCK_OUT);
+				int struckOutValue = 0;
+				if (struckOut) {
+					struckOutValue = 1;
+				}
+				newFieldValues.put(COL_STRUCK_OUT, struckOutValue);
+			}
+
+			if (dbxRecord.hasField(COL_CHECKED)) {
+				boolean checked = dbxRecord.getBoolean(COL_CHECKED);
+				int checkedValue = 0;
+				if (checked) {
+					checkedValue = 1;
+				}
+				newFieldValues.put(COL_CHECKED, checkedValue);
+			}
+
+			if (dbxRecord.hasField(COL_MANUAL_SORT_ORDER)) {
+				int sortOrder = (int) dbxRecord.getLong(COL_MANUAL_SORT_ORDER);
+				newFieldValues.put(COL_MANUAL_SORT_ORDER, sortOrder);
+			}
+			if (dbxRecord.hasField(COL_MANUAL_SORT_SWITCH)) {
+				int manualSortSwitch = (int) dbxRecord.getLong(COL_MANUAL_SORT_SWITCH);
+				newFieldValues.put(COL_MANUAL_SORT_SWITCH, manualSortSwitch);
+			}
+
+			if (dbxRecord.hasField(COL_DATE_TIME_LAST_USED)) {
+				long lastUsed = dbxRecord.getLong(COL_DATE_TIME_LAST_USED);
+				newFieldValues.put(COL_DATE_TIME_LAST_USED, lastUsed);
+			}
+		}
+		return newFieldValues;
+	}
+
+	private static void setDbxRecordValues(DbxRecord dbxRecord, ContentValues values) {
+		if (dbxRecord != null) {
+			Set<Entry<String, Object>> s = values.valueSet();
+			Iterator<Entry<String, Object>> itr = s.iterator();
+			while (itr.hasNext()) {
+				Entry<String, Object> me = itr.next();
+				String key = me.getKey().toString();
+
+				if (key.equals(COL_ITEM_NAME)) {
+					String itemName = (String) me.getValue();
+					dbxRecord.set(key, itemName);
+
+				} else if (key.equals(COL_ITEM_NUMBER)) {
+					int itemNumber = (Integer) me.getValue();
+					dbxRecord.set(key, itemNumber);
+
+				} else if (key.equals(COL_ITEM_NOTE)) {
+					String itemNote = (String) me.getValue();
+					dbxRecord.set(key, itemNote);
+
+				} else if (key.equals(COL_LIST_ID)) {
+					long listID = (Long) me.getValue();
+					dbxRecord.set(key, listID);
+
+				} else if (key.equals(COL_GROUP_ID)) {
+					long groupID = (Long) me.getValue();
+					dbxRecord.set(key, groupID);
+
+				} else if (key.equals(COL_SELECTED)) {
+					int selectedValue = (Integer) me.getValue();
+					boolean selected = false;
+					if (selectedValue == 1) {
+						selected = true;
+					}
+					dbxRecord.set(key, selected);
+
+				} else if (key.equals(COL_STRUCK_OUT)) {
+					int itemStrikoutValue = (Integer) me.getValue();
+					boolean itemStrikout = false;
+					if (itemStrikoutValue == 1) {
+						itemStrikout = true;
+					}
+					dbxRecord.set(key, itemStrikout);
+
+				} else if (key.equals(COL_CHECKED)) {
+					int itemCheckedValue = (Integer) me.getValue();
+					boolean itemChecked = false;
+					if (itemCheckedValue == 1) {
+						itemChecked = true;
+					}
+					dbxRecord.set(key, itemChecked);
+
+				} else if (key.equals(COL_MANUAL_SORT_ORDER)) {
+					int manualSortOrderValue = (Integer) me.getValue();
+					boolean manualSortOrder = false;
+					if (manualSortOrderValue == 1) {
+						manualSortOrder = true;
+					}
+					dbxRecord.set(key, manualSortOrder);
+
+				} else if (key.equals(COL_MANUAL_SORT_SWITCH)) {
+					int manualSortSwitchValue = (Integer) me.getValue();
+					boolean manualSortSwitch = false;
+					if (manualSortSwitchValue == 1) {
+						manualSortSwitch = true;
+					}
+					dbxRecord.set(key, manualSortSwitch);
+
+				} else if (key.equals(COL_DATE_TIME_LAST_USED)) {
+					long lastDate = (Long) me.getValue();
+					dbxRecord.set(key, lastDate);
+
+				} else {
+					MyLog.e("ItemsTable: setDbxRecordValues ", "Unknown column name:" + key);
+				}
+			}
+		}
+	}
+
+	public static void replaceSqlRecordsWithDbxRecords(Context context, DbxDatastore dbxDatastore) {
+
+		if (dbxDatastore != null) {
+			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
+			if (dbxActiveTable != null) {
+				try {
+					DbxTable.QueryResult allRecords = dbxActiveTable.query();
+					Iterator<DbxRecord> itr = allRecords.iterator();
+					while (itr.hasNext()) {
+						DbxRecord dbxRecord = itr.next();
+						CreateItem(context, dbxRecord);
+					}
+
+				} catch (DbxException e) {
+					MyLog.e("ItemsTable: replaceSqlRecordsWithDbxRecords ",
+							"DbxException while replacing all sql records.");
+					e.printStackTrace();
+				}
+			}
+
+		} else {
+			MyLog.e("ItemsTable: replaceSqlRecordsWithDbxRecords ",
+					"Unable to replace sql records. dbxDatastore is null!");
+		}
+	}
+
+	public static void validateSqlRecords(Context context, DbxTable dbxTable) {
+		if (dbxTable != null) {
+
+			// Iterate thru the SQL table records and verify if the SQL record exists in the Dbx table.
+			// If not ... delete the SQL table record
+			Cursor allItemsCursor = getAllDbxItemsCursor(context);
+			String dbxRecordID = "";
+			long sqlRecordID = -1;
+			DbxRecord dbxRecord = null;
+			if (allItemsCursor != null && allItemsCursor.getCount() > 0) {
+				while (allItemsCursor.moveToNext()) {
+
+					try {
+						dbxRecordID = allItemsCursor.getString(allItemsCursor
+								.getColumnIndexOrThrow(COL_ITEM_DROPBOX_ID));
+						dbxRecord = dbxTable.get(dbxRecordID);
+						if (dbxRecord == null) {
+							// the SQL table record does not exist in the Dbx table ... so delete it.
+							sqlRecordID = allItemsCursor.getLong(allItemsCursor.getColumnIndexOrThrow(COL_ITEM_ID));
+							DeleteItem(context, sqlRecordID);
+						}
+					} catch (DbxException e) {
+						MyLog.e("ItemsTable: validateSqlRecords ", "DbxException while iterating thru SQL table.");
+						e.printStackTrace();
+					}
+
+				}
+
+				// Iterate thru the dbxTable updating or creating SQL records
+				try {
+					DbxTable.QueryResult allRecords = dbxTable.query();
+					Iterator<DbxRecord> itr = allRecords.iterator();
+					while (itr.hasNext()) {
+						dbxRecord = itr.next();
+						dbxRecordID = dbxRecord.getId();
+						Cursor itemCursor = getItemFromDropboxID(context, dbxRecordID);
+						if (itemCursor != null && itemCursor.getCount() > 0) {
+							// update the existing record
+							UpdateItem(context, dbxRecordID, dbxRecord);
+						} else {
+							// create a new record
+							CreateItem(context, dbxRecord);
+						}
+						if (itemCursor != null) {
+							itemCursor.close();
+						}
+					}
+				} catch (DbxException e) {
+					MyLog.e("ItemsTable: validateSqlRecords ", "DbxException while iterating thru DbxTable.");
+					e.printStackTrace();
+				}
+			}
+
+			if (allItemsCursor != null) {
+				allItemsCursor.close();
+			}
+		}
+
 	}
 
 }

@@ -15,12 +15,14 @@ public class BridgeTable {
 	// Version 4
 	public static final String TABLE_BRIDGE = "tblBridge";
 	public static final String COL_BRIDGE_ID = "_id";
+	public static final String COL_BRIDGE_DROPBOX_ID = "bridgeDropboxID";
 	public static final String COL_LIST_ID = "listID";
 	public static final String COL_GROUP_ID = "groupID";
 	public static final String COL_STORE_ID = "storeID";
 	public static final String COL_LOCATION_ID = "locationID";
 
-	public static final String[] PROJECTION_ALL = { COL_BRIDGE_ID, COL_LIST_ID, COL_GROUP_ID, COL_STORE_ID,
+	public static final String[] PROJECTION_ALL = { COL_BRIDGE_ID, COL_BRIDGE_DROPBOX_ID, COL_LIST_ID, COL_GROUP_ID,
+			COL_STORE_ID,
 			COL_LOCATION_ID };
 
 	public static final String CONTENT_PATH = TABLE_BRIDGE;
@@ -34,6 +36,7 @@ public class BridgeTable {
 	// Database creation SQL statements
 	private static final String DATATABLE_CREATE = "create table " + TABLE_BRIDGE + " ("
 			+ COL_BRIDGE_ID + " integer primary key autoincrement, "
+			+ COL_BRIDGE_DROPBOX_ID + " text, "
 			+ COL_LIST_ID + " integer not null references " + ListsTable.TABLE_LISTS + " (" + ListsTable.COL_LIST_ID
 			+ ") default 1, "
 			+ COL_GROUP_ID + " integer not null references " + GroupsTable.TABLE_GROUPS + " ("
@@ -312,6 +315,16 @@ public class BridgeTable {
 			numberOfDeletedRecords = cr.delete(uri, where, selectionArgs);
 		}
 		return numberOfDeletedRecords;
+	}
+
+	public static void dbxDeleteSingleRecord(Context mContext, String rowIDstring) {
+		// TODO Auto-generated method stub
+
+	}
+
+	public static void dbxDeleteMultipleRecords(Context mContext, Uri uri, String selection, String[] selectionArgs) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

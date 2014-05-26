@@ -1,11 +1,17 @@
 package com.lbconsulting.alist.ui.activities;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -16,13 +22,22 @@ import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.Toast;
 
+import com.dropbox.sync.android.DbxAccount;
+import com.dropbox.sync.android.DbxAccountManager;
+import com.dropbox.sync.android.DbxDatastore;
+import com.dropbox.sync.android.DbxException;
+import com.dropbox.sync.android.DbxRecord;
+import com.dropbox.sync.android.DbxTable;
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ListsPagerAdapter;
 import com.lbconsulting.alist.classes.AListEvents.NewListCreated;
 import com.lbconsulting.alist.classes.DynamicListView;
 import com.lbconsulting.alist.classes.ListSettings;
+import com.lbconsulting.alist.database.AListContentProvider;
 import com.lbconsulting.alist.database.GroupsTable;
 import com.lbconsulting.alist.database.ItemsTable;
 import com.lbconsulting.alist.database.ListsTable;
@@ -35,7 +50,12 @@ import com.lbconsulting.alist.utilities.MyLog;
 
 import de.greenrobot.event.EventBus;
 
-public class ListsActivity extends FragmentActivity {
+public class ListsActivity extends FragmentActivity implements DbxDatastore.SyncStatusListener {
+
+	private Button mLinkButton;
+	private DbxAccountManager mAccountManager = null;
+	private DbxAccount mAccount = null;
+	private static DbxDatastore mDbxDatastore = null;
 
 	private ListsPagerAdapter mListsPagerAdapter;
 	private ViewPager mPager;
@@ -61,16 +81,15 @@ public class ListsActivity extends FragmentActivity {
 		MyLog.i("Lists_ACTIVITY", "onCreate");
 		setContentView(R.layout.activity_lists_pager);
 
+		AListContentProvider.setContext(this);
+		EventBus.getDefault().register(this);
+
 		SharedPreferences storedStates = getSharedPreferences("AList", MODE_PRIVATE);
 		mActiveListID = storedStates.getLong("ActiveListID", -1);
 		mActiveListPosition = storedStates.getInt("ActiveListPosition", -1);
 		mActiveItemID = storedStates.getLong("ActiveItemID", -1);
 
-		EventBus.getDefault().register(this);
-		if (mActiveListID < 2) {
-			CreatNewList();
-		}
-
+		// check to see if we're in a horizontal orientation
 		View frag_masterList_placeholder = this.findViewById(R.id.frag_masterList_placeholder);
 		mTwoFragmentLayout = frag_masterList_placeholder != null
 				&& frag_masterList_placeholder.getVisibility() == View.VISIBLE;
@@ -105,14 +124,128 @@ public class ListsActivity extends FragmentActivity {
 			}
 		});
 
-		if (mTwoFragmentLayout) {
-			LoadMasterListFragment();
+		if (ListsTable.isAnyListSyncedToDropBox(this)) {
+			// there is at least one list synced to dropbox
+			// so do the "OAuth" dance
+			mLinkButton = (Button) findViewById(R.id.link_button);
+			mAccountManager = DbxAccountManager.getInstance(getApplicationContext(), AListUtilities.APP_KEY,
+					AListUtilities.APP_SECRET);
+			mLinkButton.setOnClickListener(new OnClickListener() {
+
+				@Override
+				public void onClick(View v) {
+					mAccountManager.startLink(ListsActivity.this, AListUtilities.REQUEST_LINK_TO_DBX);
+				}
+			});
+
+			if (mAccountManager.hasLinkedAccount()) {
+				mAccount = mAccountManager.getLinkedAccount();
+				mLinkButton.setVisibility(View.GONE);
+				// ... Now display your own UI using the linked account information.
+				mPager.setVisibility(View.VISIBLE);
+				if (mTwoFragmentLayout) {
+					LoadMasterListFragment();
+				}
+
+				if (mActiveListID < 2) {
+					CreatNewList();
+				}
+
+			} else {
+				mPager.setVisibility(View.GONE);
+				mLinkButton.setVisibility(View.VISIBLE);
+			}
+		} else {
+			// there are no lists synced to dropbox
+			if (mTwoFragmentLayout) {
+				LoadMasterListFragment();
+			}
+			if (mActiveListID < 2) {
+				CreatNewList();
+			}
 		}
 	}
 
-	/*	public void onEvent(ActiveStoreChanged event) {
-			mActiveStoreID = event.getActiveStoreID();
-		}*/
+	@Override
+	public void onDatastoreStatusChange(DbxDatastore store) {
+		if (store.getSyncStatus().hasIncoming) {
+			// Handle the updated data
+			try {
+				Map<String, Set<DbxRecord>> changes = mDbxDatastore.sync();
+
+				AListContentProvider.setSuppressDropboxChanges(true);
+				for (Map.Entry<String, Set<DbxRecord>> table : changes.entrySet()) {
+					String tableName = table.getKey();
+					if (tableName.equals(ItemsTable.TABLE_ITEMS)) {
+						Set<?> recordSet = table.getValue();
+						Iterator<?> itr = recordSet.iterator();
+						while (itr.hasNext()) {
+							DbxRecord dbxRecord = (DbxRecord) itr.next();
+							String dbxRecordID = dbxRecord.getId();
+
+							if (!dbxRecordID.isEmpty()) {
+								if (dbxRecord.isDeleted()) {
+									ItemsTable.DeleteItem(this, dbxRecordID);
+								} else {
+									// record is either a new or revised record
+									// try and get the SQLite record
+									Cursor itemCursor = ItemsTable.getItemFromDropboxID(this, dbxRecordID);
+									if (itemCursor != null && itemCursor.getCount() > 0) {
+										// update the existing record
+										ItemsTable.UpdateItem(this, dbxRecordID, dbxRecord);
+									} else {
+										// create a new record
+										ItemsTable.CreateItem(this, dbxRecord);
+									}
+									if (itemCursor != null) {
+										itemCursor.close();
+									}
+								}
+							}
+						}
+					}
+				}
+			} catch (DbxException e) {
+				MyLog.e("MainActivity: onDatastoreStatusChange ", "DbxException.");
+			} finally {
+				AListContentProvider.setSuppressDropboxChanges(false);
+			}
+		}
+
+	}
+
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (requestCode == AListUtilities.REQUEST_LINK_TO_DBX) {
+			if (resultCode == Activity.RESULT_OK) {
+
+				mAccount = mAccountManager.getLinkedAccount();
+				String userid = mAccount.getUserId();
+				String msg = "Dropbox user < " + userid + " > linked.";
+				MyLog.i("Lists_ACTIVITY", "onActivityResult(): " + msg);
+
+				mLinkButton.setVisibility(View.GONE);
+				// ... Now display your own UI using the linked account information.
+				mPager.setVisibility(View.VISIBLE);
+				Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+				try {
+					mDbxDatastore = DbxDatastore.openDefault(mAccount);
+					if (mDbxDatastore != null) {
+						mDbxDatastore.addSyncStatusListener(this);
+					}
+					// mDbxDatastore.sync();
+				} catch (DbxException e) {
+					MyLog.e("Lists_ACTIVITY", "onActivityResult(): DbxDatastore failed to open.");
+					e.printStackTrace();
+				}
+			} else {
+				MyLog.e("Lists_ACTIVITY", "onActivityResult(): Dropbox link failed or was cancelled by the user.");
+				// ... Link failed or was cancelled by the user.
+			}
+		} else {
+			super.onActivityResult(requestCode, resultCode, data);
+		}
+	}
 
 	public void onEvent(NewListCreated event) {
 		mActiveListID = event.getActiveListID();
@@ -245,12 +378,64 @@ public class ListsActivity extends FragmentActivity {
 	@Override
 	protected void onResume() {
 		MyLog.i("Lists_ACTIVITY", "onResume");
-		if (mActiveListID < 2) {
-			CreatNewList();
-		} else {
-			mPager.setCurrentItem(mActiveListPosition);
+		if (mAccount != null & mDbxDatastore == null) {
+
+			try {
+
+				mDbxDatastore = DbxDatastore.openDefault(mAccount);
+				if (mDbxDatastore != null) {
+					mDbxDatastore.addSyncStatusListener(this);
+					mDbxDatastore.sync();
+					new ValidateSqlTables().execute();
+
+					if (mActiveListID < 2) {
+						CreatNewList();
+					} else {
+						mPager.setCurrentItem(mActiveListPosition);
+					}
+				}
+
+			} catch (DbxException e) {
+				MyLog.e("MainActivity: onResume ", "DbxException");
+				e.printStackTrace();
+			}
 		}
+
 		super.onResume();
+	}
+
+	private class ValidateSqlTables extends AsyncTask<Void, Void, Void> {
+
+		@Override
+		protected void onPreExecute() {
+			// TODO Auto-generated method stub
+			super.onPreExecute();
+		}
+
+		@Override
+		protected Void doInBackground(Void... params) {
+
+			String tableNames[] = { ItemsTable.TABLE_ITEMS };
+			AListContentProvider.setSuppressDropboxChanges(true);
+
+			for (String tableName : tableNames) {
+
+				if (tableName.equals(ItemsTable.TABLE_ITEMS)) {
+					DbxTable dbxActiveTable = mDbxDatastore.getTable(ItemsTable.TABLE_ITEMS);
+					ItemsTable.validateSqlRecords(ListsActivity.this, dbxActiveTable);
+				}
+			}
+
+			AListContentProvider.setSuppressDropboxChanges(false);
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			// TODO Auto-generated method stub
+			super.onPostExecute(result);
+		}
+
 	}
 
 	@Override
@@ -263,8 +448,29 @@ public class ListsActivity extends FragmentActivity {
 		applicationStates.putLong("ActiveListID", mActiveListID);
 		applicationStates.putLong("ActiveItemID", mActiveItemID);
 		applicationStates.putInt("ActiveListPosition", mActiveListPosition);
-
 		applicationStates.commit();
+
+		if (mDbxDatastore != null) {
+			if (mDbxDatastore.getSyncStatus().hasOutgoing) {
+				Toast.makeText(this, "Dropbox datastore has OUT_GOING", Toast.LENGTH_LONG).show();
+				MyLog.i("MainActivity: onPause()", "Dropbox datastore has outgoing");
+			}
+			if (mDbxDatastore.getSyncStatus().hasIncoming) {
+				Toast.makeText(this, "Dropbox datastore has IN_COMMING", Toast.LENGTH_LONG).show();
+				MyLog.i("MainActivity: onPause()", "Dropbox datastore has incomming");
+			}
+			if (mDbxDatastore.getSyncStatus().isDownloading) {
+				Toast.makeText(this, "Dropbox datastore is DOWN_LOADING", Toast.LENGTH_LONG).show();
+				MyLog.i("MainActivity: onPause()", "Dropbox datastore is downloading");
+			}
+			if (mDbxDatastore.getSyncStatus().isUploading) {
+				Toast.makeText(this, "Dropbox datastore is UP_LOADING", Toast.LENGTH_LONG).show();
+				MyLog.i("MainActivity: onPause()", "Dropbox datastore is uploading");
+			}
+
+			mDbxDatastore.removeSyncStatusListener(this);
+			mDbxDatastore.close();
+		}
 		super.onPause();
 	}
 
@@ -281,6 +487,7 @@ public class ListsActivity extends FragmentActivity {
 			mAllListsCursor.close();
 		}
 
+		AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}

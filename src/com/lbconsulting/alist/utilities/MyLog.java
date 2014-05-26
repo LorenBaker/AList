@@ -4,7 +4,7 @@ import android.util.Log;
 
 public class MyLog {
 
-	private static String TAG = "AList";
+	public static final String TAG = "AList";
 
 	public static void d(String className, String msg) {
 		if (Log.isLoggable(TAG, Log.DEBUG)) {

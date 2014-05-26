@@ -280,7 +280,7 @@ public class ListsDialogFragment extends DialogFragment {
 	}
 
 	protected void FillToDoList(long todosListID) {
-		AListContentProvider.SuppressChangeNotification(true);
+		AListContentProvider.setSuppressChangeNotification(true);
 
 		ArrayList<Long> todoGroupIDs = new ArrayList<Long>();
 		// create to do groups
@@ -296,7 +296,7 @@ public class ListsDialogFragment extends DialogFragment {
 		}
 
 		mActiveListID = todosListID;
-		AListContentProvider.SuppressChangeNotification(false);
+		AListContentProvider.setSuppressChangeNotification(false);
 	}
 
 	private void fillSpinListTemplate() {
@@ -426,7 +426,7 @@ public class ListsDialogFragment extends DialogFragment {
 
 	private void FillGroceriesList(long groceriesListID) {
 
-		AListContentProvider.SuppressChangeNotification(true);
+		AListContentProvider.setSuppressChangeNotification(true);
 
 		Hashtable<String, Long> groceryGroupsHashTable = new Hashtable<String, Long>();
 
@@ -553,7 +553,7 @@ public class ListsDialogFragment extends DialogFragment {
 			BridgeTable.ReviseBridgeRow(getActivity(), groceriesListID, storeID, groupID, locationID);
 		}
 
-		AListContentProvider.SuppressChangeNotification(false);
+		AListContentProvider.setSuppressChangeNotification(false);
 	}
 
 }

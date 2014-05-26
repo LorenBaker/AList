@@ -443,6 +443,22 @@ public class ListSettings {
 		return -1;
 	}
 
+	public String getListDropboxID() {
+		if (mListCursor != null) {
+			return mListCursor.getString(mListCursor.getColumnIndexOrThrow(ListsTable.COL_LIST_DROPBOX_ID));
+		}
+		return "";
+	}
+
+	public boolean isListSyncedToDropbox() {
+		if (mListCursor != null) {
+			int isListSynced = mListCursor.getInt(mListCursor
+					.getColumnIndexOrThrow(ListsTable.COL_IS_SYNCED_TO_DROPBOX));
+			return isListSynced == 1;
+		}
+		return false;
+	}
+
 	public void updateListsTableFieldValues(ContentValues newFieldValues) {
 		if (mListCursor != null) {
 			ListsTable.UpdateListsTableFieldValues(mContext, mListID, newFieldValues);

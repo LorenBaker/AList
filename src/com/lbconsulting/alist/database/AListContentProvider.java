@@ -7,6 +7,7 @@ import java.util.HashSet;
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -15,12 +16,27 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 import android.text.TextUtils;
 
+import com.dropbox.sync.android.DbxDatastore;
+import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
 public class AListContentProvider extends ContentProvider {
 
 	// AList database
 	private AListDatabaseHelper database = null;
+
+	// Dropbox database
+	private DbxDatastore mDbxDatastore;
+
+	public void setDbxDatastore(DbxDatastore dbxDatastore) {
+		this.mDbxDatastore = dbxDatastore;
+	}
+
+	private static Context mContext = null;
+
+	public static void setContext(Context context) {
+		mContext = context;
+	}
 
 	// UriMatcher switch constants
 	private static final int ITEMS_MULTI_ROWS = 10;
@@ -47,8 +63,15 @@ public class AListContentProvider extends ContentProvider {
 
 	private static boolean mSuppressChangeNotification = false;
 
-	public static void SuppressChangeNotification(boolean supressChanges) {
+	public static void setSuppressChangeNotification(boolean supressChanges) {
 		mSuppressChangeNotification = supressChanges;
+	}
+
+	private static boolean mSuppressDropboxChanges = false;
+
+	public static void setSuppressDropboxChanges(boolean suppressDropboxChanges) {
+		// if free version always suppress dropbox changes
+		mSuppressDropboxChanges = suppressDropboxChanges || AListUtilities.isFreeVersion();
 	}
 
 	public static final String AUTHORITY = "com.lbconsulting.alist.contentprovider";
@@ -98,7 +121,7 @@ public class AListContentProvider extends ContentProvider {
 	@SuppressWarnings("resource")
 	@Override
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
-		String rowID = null;
+		String rowIDstring = null;
 		int deleteCount = 0;
 
 		// Open a WritableDatabase database to support the delete transaction
@@ -113,15 +136,24 @@ public class AListContentProvider extends ContentProvider {
 					selection = "1";
 				}
 
+				if (!mSuppressDropboxChanges) {
+					ItemsTable.dbxDeleteMultipleRecords(mContext, mDbxDatastore, uri, selection, selectionArgs);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(ItemsTable.TABLE_ITEMS, selection, selectionArgs);
 				break;
 
 			case ITEMS_SINGLE_ROW:
 				// Limit deletion to a single row
-				rowID = uri.getLastPathSegment();
-				selection = ItemsTable.COL_ITEM_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = ItemsTable.COL_ITEM_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
+
+				if (!mSuppressDropboxChanges) {
+					ItemsTable.dbxDeleteSingleRecord(mContext, mDbxDatastore, rowIDstring);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(ItemsTable.TABLE_ITEMS, selection, selectionArgs);
 				break;
@@ -130,15 +162,25 @@ public class AListContentProvider extends ContentProvider {
 				if (selection == null) {
 					selection = "1";
 				}
+
+				if (!mSuppressDropboxChanges) {
+					ListsTable.dbxDeleteMultipleRecords(mContext, uri, selection, selectionArgs);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(ListsTable.TABLE_LISTS, selection, selectionArgs);
 				break;
 
 			case LIST_SINGLE_ROW:
 				// Limit deletion to a single row
-				rowID = uri.getLastPathSegment();
-				selection = ListsTable.COL_LIST_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = ListsTable.COL_LIST_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
+
+				if (!mSuppressDropboxChanges) {
+					ListsTable.dbxDeleteSingleRecord(mContext, rowIDstring);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(ListsTable.TABLE_LISTS, selection, selectionArgs);
 				break;
@@ -147,14 +189,24 @@ public class AListContentProvider extends ContentProvider {
 				if (selection == null) {
 					selection = "1";
 				}
+
+				if (!mSuppressDropboxChanges) {
+					GroupsTable.dbxDeleteMultipleRecords(mContext, uri, selection, selectionArgs);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(GroupsTable.TABLE_GROUPS, selection, selectionArgs);
 				break;
 
 			case GROUPS_SINGLE_ROW:
-				rowID = uri.getLastPathSegment();
-				selection = GroupsTable.COL_GROUP_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = GroupsTable.COL_GROUP_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
+
+				if (!mSuppressDropboxChanges) {
+					GroupsTable.dbxDeleteSingleRecord(mContext, rowIDstring);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(GroupsTable.TABLE_GROUPS, selection, selectionArgs);
 				break;
@@ -163,14 +215,23 @@ public class AListContentProvider extends ContentProvider {
 				if (selection == null) {
 					selection = "1";
 				}
+				if (!mSuppressDropboxChanges) {
+					StoresTable.dbxDeleteMultipleRecords(mContext, uri, selection, selectionArgs);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(StoresTable.TABLE_STORES, selection, selectionArgs);
 				break;
 
 			case STORES_SINGLE_ROW:
-				rowID = uri.getLastPathSegment();
-				selection = StoresTable.COL_STORE_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = StoresTable.COL_STORE_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
+
+				if (!mSuppressDropboxChanges) {
+					StoresTable.dbxDeleteSingleRecord(mContext, rowIDstring);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(StoresTable.TABLE_STORES, selection, selectionArgs);
 				break;
@@ -179,14 +240,24 @@ public class AListContentProvider extends ContentProvider {
 				if (selection == null) {
 					selection = "1";
 				}
+
+				if (!mSuppressDropboxChanges) {
+					LocationsTable.dbxDeleteMultipleRecords(mContext, uri, selection, selectionArgs);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(LocationsTable.TABLE_LOCATIONS, selection, selectionArgs);
 				break;
 
 			case LOCATIONS_SINGLE_ROW:
-				rowID = uri.getLastPathSegment();
-				selection = LocationsTable.COL_LOCATION_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = LocationsTable.COL_LOCATION_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
+
+				if (!mSuppressDropboxChanges) {
+					LocationsTable.dbxDeleteSingleRecord(mContext, rowIDstring);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(LocationsTable.TABLE_LOCATIONS, selection, selectionArgs);
 				break;
@@ -195,14 +266,24 @@ public class AListContentProvider extends ContentProvider {
 				if (selection == null) {
 					selection = "1";
 				}
+
+				if (!mSuppressDropboxChanges) {
+					BridgeTable.dbxDeleteMultipleRecords(mContext, uri, selection, selectionArgs);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(BridgeTable.TABLE_BRIDGE, selection, selectionArgs);
 				break;
 
 			case BRIDGE_SINGLE_ROW:
-				rowID = uri.getLastPathSegment();
-				selection = BridgeTable.COL_STORE_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = BridgeTable.COL_STORE_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
+
+				if (!mSuppressDropboxChanges) {
+					BridgeTable.dbxDeleteSingleRecord(mContext, rowIDstring);
+				}
+
 				// Perform the deletion
 				deleteCount = db.delete(BridgeTable.TABLE_BRIDGE, selection, selectionArgs);
 				break;
@@ -265,7 +346,7 @@ public class AListContentProvider extends ContentProvider {
 	public Uri insert(Uri uri, ContentValues values) {
 
 		SQLiteDatabase db = null;
-		long newRowId = 0;
+		long newrowIDstring = 0;
 		String nullColumnHack = null;
 
 		// Open a WritableDatabase database to support the insert transaction
@@ -275,10 +356,10 @@ public class AListContentProvider extends ContentProvider {
 		switch (uriType) {
 			case ITEMS_MULTI_ROWS:
 				values.put(ItemsTable.COL_DATE_TIME_LAST_USED, Calendar.getInstance().getTimeInMillis());
-				newRowId = db.insertOrThrow(ItemsTable.TABLE_ITEMS, nullColumnHack, values);
-				if (newRowId > 0) {
+				newrowIDstring = db.insertOrThrow(ItemsTable.TABLE_ITEMS, nullColumnHack, values);
+				if (newrowIDstring > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(ItemsTable.CONTENT_URI, newRowId);
+					Uri newRowUri = ContentUris.withAppendedId(ItemsTable.CONTENT_URI, newrowIDstring);
 
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
@@ -299,10 +380,10 @@ public class AListContentProvider extends ContentProvider {
 						"Method insert: Cannon insert a new row with a single row URI. Illegal URI: " + uri);
 
 			case LIST_MULTI_ROWS:
-				newRowId = db.insertOrThrow(ListsTable.TABLE_LISTS, nullColumnHack, values);
-				if (newRowId > 0) {
+				newrowIDstring = db.insertOrThrow(ListsTable.TABLE_LISTS, nullColumnHack, values);
+				if (newrowIDstring > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(ListsTable.CONTENT_URI, newRowId);
+					Uri newRowUri = ContentUris.withAppendedId(ListsTable.CONTENT_URI, newrowIDstring);
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
 						getContext().getContentResolver().notifyChange(ListsTable.CONTENT_URI, null);
@@ -322,10 +403,10 @@ public class AListContentProvider extends ContentProvider {
 						"Method insert: Cannot insert a new row with a single row URI. Illegal URI: " + uri);
 
 			case GROUPS_MULTI_ROWS:
-				newRowId = db.insertOrThrow(GroupsTable.TABLE_GROUPS, nullColumnHack, values);
-				if (newRowId > 0) {
+				newrowIDstring = db.insertOrThrow(GroupsTable.TABLE_GROUPS, nullColumnHack, values);
+				if (newrowIDstring > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(GroupsTable.CONTENT_URI, newRowId);
+					Uri newRowUri = ContentUris.withAppendedId(GroupsTable.CONTENT_URI, newrowIDstring);
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
 						getContext().getContentResolver().notifyChange(GroupsTable.CONTENT_URI, null);
@@ -345,10 +426,10 @@ public class AListContentProvider extends ContentProvider {
 						"Method insert: Cannot insert a new row with a single row URI. Illegal URI: " + uri);
 
 			case STORES_MULTI_ROWS:
-				newRowId = db.insertOrThrow(StoresTable.TABLE_STORES, nullColumnHack, values);
-				if (newRowId > 0) {
+				newrowIDstring = db.insertOrThrow(StoresTable.TABLE_STORES, nullColumnHack, values);
+				if (newrowIDstring > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(StoresTable.CONTENT_URI, newRowId);
+					Uri newRowUri = ContentUris.withAppendedId(StoresTable.CONTENT_URI, newrowIDstring);
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
 						getContext().getContentResolver().notifyChange(StoresTable.CONTENT_URI, null);
@@ -362,10 +443,10 @@ public class AListContentProvider extends ContentProvider {
 						"Method insert: Cannot insert a new row with a single row URI. Illegal URI: " + uri);
 
 			case LOCATIONS_MULTI_ROWS:
-				newRowId = db.insertOrThrow(LocationsTable.TABLE_LOCATIONS, nullColumnHack, values);
-				if (newRowId > 0) {
+				newrowIDstring = db.insertOrThrow(LocationsTable.TABLE_LOCATIONS, nullColumnHack, values);
+				if (newrowIDstring > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(LocationsTable.CONTENT_URI, newRowId);
+					Uri newRowUri = ContentUris.withAppendedId(LocationsTable.CONTENT_URI, newrowIDstring);
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
 						getContext().getContentResolver().notifyChange(LocationsTable.CONTENT_URI, null);
@@ -385,10 +466,10 @@ public class AListContentProvider extends ContentProvider {
 						"Method insert: Cannot insert a new row with a single row URI. Illegal URI: " + uri);
 
 			case BRIDGE_MULTI_ROWS:
-				newRowId = db.insertOrThrow(BridgeTable.TABLE_BRIDGE, nullColumnHack, values);
-				if (newRowId > 0) {
+				newrowIDstring = db.insertOrThrow(BridgeTable.TABLE_BRIDGE, nullColumnHack, values);
+				if (newrowIDstring > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(BridgeTable.CONTENT_URI, newRowId);
+					Uri newRowUri = ContentUris.withAppendedId(BridgeTable.CONTENT_URI, newrowIDstring);
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
 						getContext().getContentResolver().notifyChange(BridgeTable.CONTENT_URI, null);
@@ -583,7 +664,7 @@ public class AListContentProvider extends ContentProvider {
 	@SuppressWarnings("resource")
 	@Override
 	public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-		String rowID = null;
+		String rowIDstring = null;
 		int updateCount = 0;
 
 		// Open a WritableDatabase database to support the update transaction
@@ -605,8 +686,8 @@ public class AListContentProvider extends ContentProvider {
 
 			case ITEMS_SINGLE_ROW:
 				// Limit update to a single row
-				rowID = uri.getLastPathSegment();
-				selection = ItemsTable.COL_ITEM_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = ItemsTable.COL_ITEM_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 
 				if (values.containsKey(ItemsTable.COL_SELECTED)) {
@@ -627,8 +708,8 @@ public class AListContentProvider extends ContentProvider {
 
 			case LIST_SINGLE_ROW:
 				// Limit deletion to a single row
-				rowID = uri.getLastPathSegment();
-				selection = ListsTable.COL_LIST_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = ListsTable.COL_LIST_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 				// Perform the update
 				updateCount = db.update(ListsTable.TABLE_LISTS, values, selection, selectionArgs);
@@ -641,8 +722,8 @@ public class AListContentProvider extends ContentProvider {
 
 			case GROUPS_SINGLE_ROW:
 				// Limit deletion to a single row
-				rowID = uri.getLastPathSegment();
-				selection = GroupsTable.COL_GROUP_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = GroupsTable.COL_GROUP_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 				// Perform the update
 				updateCount = db.update(GroupsTable.TABLE_GROUPS, values, selection, selectionArgs);
@@ -655,8 +736,8 @@ public class AListContentProvider extends ContentProvider {
 
 			case STORES_SINGLE_ROW:
 				// Limit deletion to a single row
-				rowID = uri.getLastPathSegment();
-				selection = StoresTable.COL_STORE_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = StoresTable.COL_STORE_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 				// Perform the update
 				updateCount = db.update(StoresTable.TABLE_STORES, values, selection, selectionArgs);
@@ -669,8 +750,8 @@ public class AListContentProvider extends ContentProvider {
 
 			case LOCATIONS_SINGLE_ROW:
 				// Limit deletion to a single row
-				rowID = uri.getLastPathSegment();
-				selection = LocationsTable.COL_LOCATION_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = LocationsTable.COL_LOCATION_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 				// Perform the update
 				updateCount = db.update(LocationsTable.TABLE_LOCATIONS, values, selection, selectionArgs);
@@ -683,8 +764,8 @@ public class AListContentProvider extends ContentProvider {
 
 			case BRIDGE_SINGLE_ROW:
 				// Limit deletion to a single row
-				rowID = uri.getLastPathSegment();
-				selection = BridgeTable.COL_BRIDGE_ID + "=" + rowID
+				rowIDstring = uri.getLastPathSegment();
+				selection = BridgeTable.COL_BRIDGE_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 				// Perform the update
 				updateCount = db.update(BridgeTable.TABLE_BRIDGE, values, selection, selectionArgs);
