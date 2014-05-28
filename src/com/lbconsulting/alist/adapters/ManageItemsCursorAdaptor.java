@@ -13,7 +13,6 @@ import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.GroupsTable;
 import com.lbconsulting.alist.database.ItemsTable;
-import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
 public class ManageItemsCursorAdaptor extends CursorAdapter {
@@ -70,7 +69,7 @@ public class ManageItemsCursorAdaptor extends CursorAdapter {
 			}
 
 			int isCheckedValue = cursor.getInt(cursor.getColumnIndex(ItemsTable.COL_CHECKED));
-			boolean isChecked = AListUtilities.intToBoolean(isCheckedValue);
+			boolean isChecked = isCheckedValue > 0;
 			CheckBox ckBox = (CheckBox) view.findViewById(R.id.ckBox);
 			if (ckBox != null) {
 				ckBox.setChecked(isChecked);

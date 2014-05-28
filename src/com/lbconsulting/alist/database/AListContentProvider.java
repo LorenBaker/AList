@@ -26,10 +26,10 @@ public class AListContentProvider extends ContentProvider {
 	private AListDatabaseHelper database = null;
 
 	// Dropbox database
-	private DbxDatastore mDbxDatastore;
+	private static DbxDatastore mDbxDatastore;
 
-	public void setDbxDatastore(DbxDatastore dbxDatastore) {
-		this.mDbxDatastore = dbxDatastore;
+	public static void setDbxDatastore(DbxDatastore dbxDatastore) {
+		mDbxDatastore = dbxDatastore;
 	}
 
 	private static Context mContext = null;
@@ -164,7 +164,7 @@ public class AListContentProvider extends ContentProvider {
 				}
 
 				if (!mSuppressDropboxChanges) {
-					ListsTable.dbxDeleteMultipleRecords(mContext, uri, selection, selectionArgs);
+					ListsTable.dbxDeleteMultipleRecords(mContext, mDbxDatastore, uri, selection, selectionArgs);
 				}
 
 				// Perform the deletion
@@ -178,7 +178,7 @@ public class AListContentProvider extends ContentProvider {
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 
 				if (!mSuppressDropboxChanges) {
-					ListsTable.dbxDeleteSingleRecord(mContext, rowIDstring);
+					ListsTable.dbxDeleteSingleRecord(mContext, mDbxDatastore, rowIDstring);
 				}
 
 				// Perform the deletion

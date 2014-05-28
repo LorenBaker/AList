@@ -109,8 +109,9 @@ public class MasterListFragment extends Fragment implements LoaderManager.Loader
 			mActiveListID = savedInstanceState.getLong("listID", 0);
 		} else {
 			Bundle bundle = getArguments();
-			if (bundle != null)
+			if (bundle != null) {
 				mActiveListID = bundle.getLong("listID", 0);
+			}
 		}
 
 		View view = inflater.inflate(R.layout.frag_master_list, container, false);

@@ -13,7 +13,6 @@ import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.database.BridgeTable;
 import com.lbconsulting.alist.database.GroupsTable;
 import com.lbconsulting.alist.database.LocationsTable;
-import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
 public class ManageLocationsCursorAdaptor extends CursorAdapter {
@@ -63,7 +62,7 @@ public class ManageLocationsCursorAdaptor extends CursorAdapter {
 				}
 
 				int isCheckedValue = cursor.getInt(cursor.getColumnIndexOrThrow(GroupsTable.COL_CHECKED));
-				boolean isChecked = AListUtilities.intToBoolean(isCheckedValue);
+				boolean isChecked = isCheckedValue > 0;
 				CheckBox ckBox = (CheckBox) view.findViewById(R.id.ckBox);
 				if (ckBox != null) {
 					ckBox.setChecked(isChecked);

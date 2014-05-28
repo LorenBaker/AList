@@ -5,7 +5,6 @@ import android.content.Context;
 import android.database.Cursor;
 
 import com.lbconsulting.alist.database.ItemsTable;
-import com.lbconsulting.alist.utilities.AListUtilities;
 
 public class ItemSettings {
 
@@ -48,17 +47,17 @@ public class ItemSettings {
 
 	public boolean isItemSelected() {
 		int itemSelectedValue = itemCursor.getInt(itemCursor.getColumnIndexOrThrow(ItemsTable.COL_SELECTED));
-		return AListUtilities.intToBoolean(itemSelectedValue);
+		return itemSelectedValue > 0;
 	}
 
 	public boolean isItemStruckOut() {
 		int ItemStruckOutValue = itemCursor.getInt(itemCursor.getColumnIndexOrThrow(ItemsTable.COL_STRUCK_OUT));
-		return AListUtilities.intToBoolean(ItemStruckOutValue);
+		return ItemStruckOutValue > 0;
 	}
 
 	public boolean isItemChecked() {
 		int ItemCheckedValue = itemCursor.getInt(itemCursor.getColumnIndexOrThrow(ItemsTable.COL_CHECKED));
-		return AListUtilities.intToBoolean(ItemCheckedValue);
+		return ItemCheckedValue > 0;
 	}
 
 	public int getManualSortOrder() {

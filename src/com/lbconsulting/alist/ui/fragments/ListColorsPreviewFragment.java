@@ -116,8 +116,9 @@ public class ListColorsPreviewFragment extends Fragment {
 			mActiveListID = savedInstanceState.getLong("listID", 0);
 		} else {
 			Bundle bundle = getArguments();
-			if (bundle != null)
+			if (bundle != null) {
 				mActiveListID = bundle.getLong("listID", 0);
+			}
 		}
 
 		View view = inflater.inflate(R.layout.frag_colors_preview, container, false);

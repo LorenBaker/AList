@@ -26,6 +26,13 @@
 				android:layout_height="wrap_content"
 				android:text="Sync list to dropbox" />
 
+			<Switch
+				android:id="@+id/swSyncListPrefToDropbox"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:enabled="false"
+				android:text="Sync list Preferences to dropbox" />
+
 			<RadioGroup
 				android:id="@+id/rbGroupListsView"
 				android:layout_width="match_parent"

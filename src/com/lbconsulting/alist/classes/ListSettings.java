@@ -315,7 +315,7 @@ public class ListSettings {
 		if (mListCursor != null) {
 			int value = mListCursor.getInt(mListCursor
 					.getColumnIndexOrThrow(ListsTable.COL_DELETE_NOTE_UPON_DESELECTING_ITEM));
-			return AListUtilities.intToBoolean(value);
+			return value > 0;
 		}
 		return false;
 	}
@@ -452,9 +452,27 @@ public class ListSettings {
 
 	public boolean isListSyncedToDropbox() {
 		if (mListCursor != null) {
-			int isListSynced = mListCursor.getInt(mListCursor
+			int isSynced = mListCursor.getInt(mListCursor
 					.getColumnIndexOrThrow(ListsTable.COL_IS_SYNCED_TO_DROPBOX));
-			return isListSynced == 1;
+			return isSynced > 0;
+		}
+		return false;
+	}
+
+	public boolean isListListPreferencesSyncedToDropbox() {
+		if (mListCursor != null) {
+			int isSynced = mListCursor.getInt(mListCursor
+					.getColumnIndexOrThrow(ListsTable.COL_IS_LIST_PREF_SYNCED_TO_DROPBOX));
+			return isSynced > 0;
+		}
+		return false;
+	}
+
+	public boolean isFirstTimeSync() {
+		if (mListCursor != null) {
+			int isSynced = mListCursor.getInt(mListCursor
+					.getColumnIndexOrThrow(ListsTable.COL_IS_FIRST_TIME_SYNC));
+			return isSynced > 0;
 		}
 		return false;
 	}

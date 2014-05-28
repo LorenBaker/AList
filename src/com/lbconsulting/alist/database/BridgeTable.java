@@ -238,7 +238,7 @@ public class BridgeTable {
 			ContentResolver cr = context.getContentResolver();
 			Uri uri = CONTENT_URI;
 			String where = COL_LOCATION_ID + " = ?";
-			String[] whereArgs = { String.valueOf(locationID) };
+			String[] whereArgs = new String[] { String.valueOf(locationID) };
 
 			ContentValues values = new ContentValues();
 			values.put(COL_LOCATION_ID, 1); // locationID = 1 is the default locationID

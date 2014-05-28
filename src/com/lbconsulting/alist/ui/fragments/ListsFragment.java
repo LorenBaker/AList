@@ -54,12 +54,6 @@ public class ListsFragment extends Fragment implements LoaderManager.LoaderCallb
 		// Empty constructor
 	}
 
-	/**
-	 * Create a new instance of EditItemDialogFragment
-	 * 
-	 * @param itemID
-	 * @return EditItemDialogFragment
-	 */
 	public static ListsFragment newInstance(long newListID) {
 
 		if (newListID < 2) {
@@ -108,9 +102,10 @@ public class ListsFragment extends Fragment implements LoaderManager.LoaderCallb
 			mActiveStoreID = savedInstanceState.getLong("storeID", -1);
 		} else {
 			Bundle bundle = getArguments();
-			if (bundle != null)
+			if (bundle != null) {
 				mActiveListID = bundle.getLong("listID", 0);
-			mActiveStoreID = bundle.getLong("storeID", -1);
+				mActiveStoreID = bundle.getLong("storeID", -1);
+			}
 		}
 
 		View view = inflater.inflate(R.layout.frag_lists, container, false);

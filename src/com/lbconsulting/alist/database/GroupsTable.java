@@ -404,7 +404,7 @@ public class GroupsTable {
 			cursor.moveToFirst();
 			int columnIndex = cursor.getColumnIndexOrThrow(COL_CHECKED);
 			int checkIntValue = cursor.getInt(columnIndex);
-			boolean checkValue = AListUtilities.intToBoolean(checkIntValue);
+			boolean checkValue = checkIntValue > 0;
 			cursor.close();
 			CheckItem(context, groupID, !checkValue);
 		}

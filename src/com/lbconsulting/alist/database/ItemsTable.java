@@ -511,7 +511,7 @@ public class ItemsTable {
 		try {
 			cursor = cr.query(uri, projection, selection, selectionArgs, SORT_ORDER_ITEM_NAME);
 		} catch (Exception e) {
-			MyLog.e("Exception error  in getAllDbxItemsCursor: getItems. ", "");
+			MyLog.e("Exception error  in getAllDbxItemsCursor. ", "");
 			e.printStackTrace();
 		}
 		return cursor;
@@ -738,7 +738,7 @@ public class ItemsTable {
 			cursor.moveToFirst();
 			int columnIndex = cursor.getColumnIndexOrThrow(COL_STRUCK_OUT);
 			int strikeOutIntValue = cursor.getInt(columnIndex);
-			boolean strikeOutValue = AListUtilities.intToBoolean(strikeOutIntValue);
+			boolean strikeOutValue = strikeOutIntValue > 0;
 			cursor.close();
 			StrikeItem(context, itemID, !strikeOutValue);
 		}
@@ -750,7 +750,7 @@ public class ItemsTable {
 			cursor.moveToFirst();
 			int columnIndex = cursor.getColumnIndexOrThrow(COL_SELECTED);
 			int selectedIntValue = cursor.getInt(columnIndex);
-			boolean selectedValue = AListUtilities.intToBoolean(selectedIntValue);
+			boolean selectedValue = selectedIntValue > 0;
 			cursor.close();
 			SelectItem(context, itemID, !selectedValue);
 		}
@@ -763,7 +763,7 @@ public class ItemsTable {
 			cursor.moveToFirst();
 			int columnIndex = cursor.getColumnIndexOrThrow(COL_CHECKED);
 			int checkIntValue = cursor.getInt(columnIndex);
-			boolean checkValue = AListUtilities.intToBoolean(checkIntValue);
+			boolean checkValue = checkIntValue > 0;
 			cursor.close();
 			CheckItem(context, itemID, !checkValue);
 		}
@@ -1280,8 +1280,15 @@ public class ItemsTable {
 	// Dropbox Datastore Methods
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	public static void dbxInsert(Context context, DbxDatastore dbxDatastore, long newRowID, ContentValues values) {
+	public static void dbxInsert(Context context, DbxDatastore dbxDatastore, long itemID) {
+		ContentValues values = setContentValues(context, itemID);
+		DbxRecord dbxRecord = dbxInsert(context, dbxDatastore, itemID, values);
+		setDbxRecordValues(dbxRecord, values);
+	}
 
+	public static DbxRecord dbxInsert(Context context, DbxDatastore dbxDatastore, long newRowID, ContentValues values) {
+
+		DbxRecord newItemRecord = null;
 		if (dbxDatastore != null) {
 			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
 
@@ -1289,7 +1296,6 @@ public class ItemsTable {
 				Calendar now = Calendar.getInstance();
 				long nowMillis = now.getTimeInMillis();
 
-				DbxRecord newItemRecord = null;
 				Set<Entry<String, Object>> s = values.valueSet();
 				Iterator<Entry<String, Object>> itr = s.iterator();
 				while (itr.hasNext()) {
@@ -1346,6 +1352,7 @@ public class ItemsTable {
 		} else {
 			MyLog.e("ItemsTable: dbxInsert ", "Unable to insert record. dbxDatastore is null!");
 		}
+		return newItemRecord;
 
 	}
 
@@ -1395,7 +1402,8 @@ public class ItemsTable {
 
 						dbxDatastore.sync();
 					} catch (DbxException e) {
-						MyLog.e("ItemsTable: dbxDeleteMultipleRecords ", "DbxException while trying dropbox records.");
+						MyLog.e("ItemsTable: dbxDeleteMultipleRecords ",
+								"DbxException while trying to delete multiple dropbox records.");
 						e.printStackTrace();
 
 					} finally {
@@ -1521,20 +1529,37 @@ public class ItemsTable {
 		AListContentProvider.setSuppressDropboxChanges(false);
 	}
 
+	private static ContentValues setContentValues(Context context, long itemID) {
+		ContentValues newFieldValues = new ContentValues();
+		Cursor cursor = getItem(context, itemID);
+		if (cursor != null) {
+			cursor.moveToFirst();
+
+			for (String col : PROJECTION_ALL) {
+				if (col.equals(COL_ITEM_ID) || col.equals(COL_ITEM_DROPBOX_ID)) {
+					// do nothing
+
+				} else if (col.equals(COL_ITEM_NAME) || col.equals(COL_ITEM_NOTE)) {
+					String value = cursor.getString(cursor.getColumnIndexOrThrow(col));
+					newFieldValues.put(col, value);
+
+				} else if (col.equals(COL_LIST_ID) || col.equals(COL_GROUP_ID) || col.equals(COL_DATE_TIME_LAST_USED)) {
+					long value = cursor.getLong(cursor.getColumnIndexOrThrow(col));
+					newFieldValues.put(col, value);
+
+				} else {
+					int value = cursor.getInt(cursor.getColumnIndexOrThrow(col));
+					newFieldValues.put(col, value);
+				}
+			}
+			cursor.close();
+		}
+
+		return newFieldValues;
+	}
+
 	private static ContentValues setContentValues(DbxRecord dbxRecord) {
 		ContentValues newFieldValues = new ContentValues();
-
-		/*		.set(key, itemName)
-				.set(COL_ITEM_NUMBER, -1)
-				.set(COL_ITEM_NOTE, "")
-				.set(COL_LIST_ID, 1)
-				.set(COL_GROUP_ID, 1)
-				.set(COL_SELECTED, false)
-				.set(COL_STRUCK_OUT, false)
-				.set(COL_CHECKED, false)
-				.set(COL_MANUAL_SORT_ORDER, -1)
-				.set(COL_MANUAL_SORT_SWITCH, 1)
-				.set(COL_DATE_TIME_LAST_USED, -1);*/
 
 		if (dbxRecord != null) {
 			String dbxID = dbxRecord.getId();

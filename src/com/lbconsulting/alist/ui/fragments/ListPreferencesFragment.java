@@ -23,7 +23,6 @@ import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.classes.ListSettings;
 import com.lbconsulting.alist.database.ListsTable;
 import com.lbconsulting.alist.ui.activities.ListColorsActivity;
-import com.lbconsulting.alist.ui.activities.ListsActivity;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
@@ -44,6 +43,7 @@ public class ListPreferencesFragment extends Fragment {
 
 	private Switch swDeleteNoteUponClearingItem;
 	private Switch swSyncToDropbox;
+	private Switch swSyncListPrefToDropbox;
 
 	private RadioGroup rbGroupListsView;
 	private RadioGroup rbGroupMasterListsView;
@@ -110,8 +110,9 @@ public class ListPreferencesFragment extends Fragment {
 			mActiveListID = savedInstanceState.getLong("listID", 0);
 		} else {
 			Bundle bundle = getArguments();
-			if (bundle != null)
+			if (bundle != null) {
 				mActiveListID = bundle.getLong("listID", 0);
+			}
 		}
 		View view = inflater.inflate(R.layout.frag_list_preferences, container, false);
 		if (view != null && mActiveListID > 1) {
@@ -133,6 +134,7 @@ public class ListPreferencesFragment extends Fragment {
 
 			swDeleteNoteUponClearingItem = (Switch) view.findViewById(R.id.swDeleteNoteUponClearingItem);
 			swSyncToDropbox = (Switch) view.findViewById(R.id.swSyncToDropbox);
+			swSyncListPrefToDropbox = (Switch) view.findViewById(R.id.swSyncListPrefToDropbox);
 
 			rbMasterListViewAlphabetical = (RadioButton) view.findViewById(R.id.rbMasterListViewAlphabetical);
 			rbMasterListViewGroup = (RadioButton) view.findViewById(R.id.rbMasterListViewGroup);
@@ -160,6 +162,7 @@ public class ListPreferencesFragment extends Fragment {
 
 		swDeleteNoteUponClearingItem.setOnCheckedChangeListener(switchOnCheckedChanged);
 		swSyncToDropbox.setOnCheckedChangeListener(switchOnCheckedChanged);
+		swSyncListPrefToDropbox.setOnCheckedChangeListener(switchOnCheckedChanged);
 
 		getActivity().getActionBar().setTitle("List Preferences");
 
@@ -290,11 +293,26 @@ public class ListPreferencesFragment extends Fragment {
 
 				case R.id.swSyncToDropbox:
 					newFieldValues.put(ListsTable.COL_IS_SYNCED_TO_DROPBOX, checkedValue);
+
 					if (isChecked) {
+						swSyncListPrefToDropbox.setEnabled(true);
+						newFieldValues.put(ListsTable.COL_IS_FIRST_TIME_SYNC, checkedValue);
+					} else {
+						newFieldValues.put(ListsTable.COL_IS_LIST_PREF_SYNCED_TO_DROPBOX, 0);
+						swSyncListPrefToDropbox.setChecked(false);
+						swSyncListPrefToDropbox.setEnabled(false);
+					}
+
+					/*if (isChecked) {
 						// start the Lists Activity to initialize dropbox
 						Intent listsActivtyIntent = new Intent(getActivity(), ListsActivity.class);
 						startActivity(listsActivtyIntent);
-					}
+					}*/
+					break;
+
+				case R.id.swSyncListPrefToDropbox:
+					newFieldValues.put(ListsTable.COL_IS_LIST_PREF_SYNCED_TO_DROPBOX, checkedValue);
+
 					break;
 
 				default:

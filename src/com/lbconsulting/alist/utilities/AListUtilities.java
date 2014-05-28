@@ -86,9 +86,9 @@ public class AListUtilities {
 		return b ? 1 : 0;
 	}
 
-	public static boolean intToBoolean(int value) {
-		return value > 0;
-	}
+	/*	public static boolean intToBoolean(int value) {
+			return value > 0;
+		}*/
 
 	public static long boolToLong(boolean b) {
 		return b ? 1 : 0;
