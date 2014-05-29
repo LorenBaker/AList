@@ -6,6 +6,7 @@ import java.util.Set;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -79,7 +80,7 @@ public class ListsActivity extends FragmentActivity implements DbxDatastore.Sync
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		MyLog.i("Lists_ACTIVITY", "onCreate");
+		MyLog.i("Lists_ACTIVITY", "onCreate()");
 		setContentView(R.layout.activity_lists_pager);
 
 		AListContentProvider.setContext(this);
@@ -125,48 +126,32 @@ public class ListsActivity extends FragmentActivity implements DbxDatastore.Sync
 			}
 		});
 
+		mLinkButton = (Button) findViewById(R.id.link_button);
+
 		if (ListsTable.isAnyListSyncedToDropBox(this)) {
 			// there is at least one list synced to dropbox
-			// so do the "OAuth" dance
-			mLinkButton = (Button) findViewById(R.id.link_button);
-			mAccountManager = DbxAccountManager.getInstance(getApplicationContext(), AListUtilities.APP_KEY,
-					AListUtilities.APP_SECRET);
-			mLinkButton.setOnClickListener(new OnClickListener() {
-
-				@Override
-				public void onClick(View v) {
-					mAccountManager.startLink(ListsActivity.this, AListUtilities.REQUEST_LINK_TO_DBX);
-				}
-			});
-
-			if (mAccountManager.hasLinkedAccount()) {
-				mAccount = mAccountManager.getLinkedAccount();
-				// hide the link to dropbox button
-				mLinkButton.setVisibility(View.GONE);
-				// ... Now display your own UI using the linked account information.
-				// show the ListsFragment
-				mPager.setVisibility(View.VISIBLE);
-				if (mTwoFragmentLayout) {
-					LoadMasterListFragment();
-				}
-
-				if (mActiveListID < 2) {
-					CreatNewList();
-				}
-
-			} else {
-				// hide the ListsFragment
+			// get the dbxDatastore from the AList Content Provider
+			mDbxDatastore = AListContentProvider.getDbxDatastore();
+			if (mDbxDatastore == null) {
+				// the application has not been authenticated with dropbox
+				// so do the "OAuth" dance
+				mAccountManager = DbxAccountManager.getInstance(getApplicationContext(), AListUtilities.APP_KEY,
+						AListUtilities.APP_SECRET);
 				mPager.setVisibility(View.GONE);
-				// show the link to dropbox button
+
 				mLinkButton.setVisibility(View.VISIBLE);
-			}
-		} else {
-			// there are no lists synced to dropbox
-			if (mTwoFragmentLayout) {
-				LoadMasterListFragment();
-			}
-			if (mActiveListID < 2) {
-				CreatNewList();
+				mLinkButton.setOnClickListener(new OnClickListener() {
+
+					@Override
+					public void onClick(View v) {
+						mAccountManager.startLink(ListsActivity.this, AListUtilities.REQUEST_LINK_TO_DBX);
+					}
+				});
+			} else {
+				// the application has been authenticated with dropbox
+				mDbxDatastore.addSyncStatusListener(this);
+				mLinkButton.setVisibility(View.GONE);
+				mPager.setVisibility(View.VISIBLE);
 			}
 		}
 	}
@@ -227,22 +212,31 @@ public class ListsActivity extends FragmentActivity implements DbxDatastore.Sync
 				mAccount = mAccountManager.getLinkedAccount();
 				String userid = mAccount.getUserId();
 				String msg = "Dropbox user < " + userid + " > linked.";
-				MyLog.i("Lists_ACTIVITY", "onActivityResult(): " + msg);
+
+				try {
+					mDbxDatastore = DbxDatastore.openDefault(mAccount);
+					AListContentProvider.setDbxDatastore(mDbxDatastore);
+					mDbxDatastore.addSyncStatusListener(this);
+
+				} catch (DbxException e) {
+					MyLog.e("Lists_ACTIVITY", "onActivityResult(): DbxException while trying to openDefault datastore.");
+					e.printStackTrace();
+				}
 
 				mLinkButton.setVisibility(View.GONE);
 				// ... Now display your own UI using the linked account information.
 				mPager.setVisibility(View.VISIBLE);
-				Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-				try {
-					mDbxDatastore = DbxDatastore.openDefault(mAccount);
-					if (mDbxDatastore != null) {
-						mDbxDatastore.addSyncStatusListener(this);
-					}
-					// mDbxDatastore.sync();
-				} catch (DbxException e) {
-					MyLog.e("Lists_ACTIVITY", "onActivityResult(): DbxDatastore failed to open.");
-					e.printStackTrace();
+
+				if (mTwoFragmentLayout) {
+					LoadMasterListFragment();
 				}
+				if (mActiveListID < 2) {
+					CreatNewList();
+				}
+
+				MyLog.i("Lists_ACTIVITY", "onActivityResult(): " + msg);
+				Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+
 			} else {
 				MyLog.e("Lists_ACTIVITY", "onActivityResult(): Dropbox link failed or was cancelled by the user.");
 				// ... Link failed or was cancelled by the user.
@@ -382,35 +376,47 @@ public class ListsActivity extends FragmentActivity implements DbxDatastore.Sync
 
 	@Override
 	protected void onResume() {
-		MyLog.i("Lists_ACTIVITY", "onResume");
-		if (mAccount != null & mDbxDatastore == null) {
+		MyLog.i("Lists_ACTIVITY", "onResume()");
 
-			try {
-
-				mDbxDatastore = DbxDatastore.openDefault(mAccount);
-				if (mDbxDatastore != null) {
-					mDbxDatastore.addSyncStatusListener(this);
+		if (ListsTable.isAnyListSyncedToDropBox(this)) {
+			mDbxDatastore = AListContentProvider.getDbxDatastore();
+			if (mDbxDatastore != null) {
+				if (!mDbxDatastore.isOpen()) {
+					mAccountManager = DbxAccountManager.getInstance(getApplicationContext(), AListUtilities.APP_KEY,
+							AListUtilities.APP_SECRET);
+					if (mAccountManager.hasLinkedAccount()) {
+						mAccount = mAccountManager.getLinkedAccount();
+						try {
+							mDbxDatastore = DbxDatastore.openDefault(mAccount);
+							AListContentProvider.setDbxDatastore(mDbxDatastore);
+						} catch (DbxException e) {
+							MyLog.e("Lists_ACTIVITY", "onResume(): DbxException while opening dbxDatastore");
+							e.printStackTrace();
+						}
+					} else {
+						MyLog.e("Lists_ACTIVITY", "onResume(): there is no linked account!");
+					}
 				}
-
-				// set AListContentProvider dbxDatasore
-				AListContentProvider.setDbxDatastore(mDbxDatastore);
-				mDbxDatastore.sync();
-
-			} catch (DbxException e) {
-				MyLog.e("MainActivity: onResume ", "DbxException");
-				e.printStackTrace();
-			}
-
-			if (ListsTable.isAnyListSyncedToDropBox(this)) {
 				new ValidateSqlTables().execute();
 			}
-			if (mActiveListID < 2) {
-				CreatNewList();
-			} else {
-				mPager.setCurrentItem(mActiveListPosition);
-			}
 		}
+
+		if (mTwoFragmentLayout) {
+			LoadMasterListFragment();
+		}
+
+		if (mActiveListID < 2) {
+			CreatNewList();
+		} else {
+			mPager.setCurrentItem(mActiveListPosition);
+		}
+
 		super.onResume();
+	}
+
+	private void DeleteAllDropboxTables() {
+		ListsTable.dbxDeleteAllRecords(mDbxDatastore);
+		ItemsTable.dbxDeleteAllRecords(mDbxDatastore);
 	}
 
 	private class ValidateSqlTables extends AsyncTask<Void, Void, Void> {
@@ -457,11 +463,20 @@ public class ListsActivity extends FragmentActivity implements DbxDatastore.Sync
 
 								firstResult
 										.set(ListsTable.COL_IS_SYNCED_TO_DROPBOX, 1)
-										.set(ListsTable.COL_IS_FIRST_TIME_SYNC, isListPreferencesSyncedToDropbox);
+										.set(ListsTable.COL_IS_FIRST_TIME_SYNC, isListPreferencesSyncedToDropbox)
+										.set(ListsTable.COL_IS_FIRST_TIME_SYNC, 0);
 							} else {
-								// the first time sync list does not exist in the dropbox database
-								// TODO: place all SQLite first time sync list in to dropbox
+								// The first time sync list does not exist in the dropbox database.
+
+								// clear the first time sync list flag
+								ContentValues cv = new ContentValues();
+								cv.put(ListsTable.COL_IS_FIRST_TIME_SYNC, 0);
+								ListsTable.UpdateListsTableFieldValues(ListsActivity.this, listID, cv);
+
+								// Insert SQLite first time sync list in to dropbox
 								ListsTable.dbxInsert(ListsActivity.this, mDbxDatastore, listID);
+								ItemsTable.dbxInsertAllItems(ListsActivity.this, mDbxDatastore, listID);
+								// TODO: insert other SQLite tables
 							}
 						} catch (DbxException e) {
 							MyLog.e("Lists_ACTIVITY", "DbxException in ValidateSqlTables, doInBackground.");
@@ -471,7 +486,12 @@ public class ListsActivity extends FragmentActivity implements DbxDatastore.Sync
 						// The lists table does NOT exist in the dropbox database
 						// So the first time sync list does not exist in the dropbox database
 						// TODO: place all SQLite first time sync list in to dropbox
-						ListsTable.dbxInsert(ListsActivity.this, mDbxDatastore, listID);
+						try {
+							ListsTable.dbxInsert(ListsActivity.this, mDbxDatastore, listID);
+						} catch (DbxException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 				}
 			}
@@ -517,6 +537,11 @@ public class ListsActivity extends FragmentActivity implements DbxDatastore.Sync
 		applicationStates.putLong("ActiveListID", mActiveListID);
 		applicationStates.putLong("ActiveItemID", mActiveItemID);
 		applicationStates.putInt("ActiveListPosition", mActiveListPosition);
+		if (ListsTable.isAnyListSyncedToDropBox(this)) {
+			applicationStates.putBoolean("ListsSyncedToDropbox", true);
+		} else {
+			applicationStates.putBoolean("ListsSyncedToDropbox", false);
+		}
 		applicationStates.commit();
 
 		if (mDbxDatastore != null) {
@@ -538,7 +563,7 @@ public class ListsActivity extends FragmentActivity implements DbxDatastore.Sync
 			}
 
 			mDbxDatastore.removeSyncStatusListener(this);
-			mDbxDatastore.close();
+			// mDbxDatastore.close();
 		}
 		super.onPause();
 	}
@@ -564,7 +589,7 @@ public class ListsActivity extends FragmentActivity implements DbxDatastore.Sync
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MyLog.i("Lists_ACTIVITY", "onCreateOptionsMenu");
-		getMenuInflater().inflate(R.menu.lists_1activity, menu);
+		getMenuInflater().inflate(R.menu.lists_activity, menu);
 		return true;
 	}
 
@@ -580,6 +605,10 @@ public class ListsActivity extends FragmentActivity implements DbxDatastore.Sync
 
 			case R.id.action_addItem:
 				StartMasterListActivity();
+				return true;
+
+			case R.id.action_DeleteAllDropboxTables:
+				DeleteAllDropboxTables();
 				return true;
 
 			case R.id.action_newList:

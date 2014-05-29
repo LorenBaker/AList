@@ -174,7 +174,7 @@ public class ManageStoresActivity extends FragmentActivity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MyLog.i("Stores_ACTIVITY", "onCreateOptionsMenu");
-		getMenuInflater().inflate(R.menu.stores_1activity, menu);
+		getMenuInflater().inflate(R.menu.stores_activity, menu);
 		return super.onCreateOptionsMenu(menu);
 	}
 

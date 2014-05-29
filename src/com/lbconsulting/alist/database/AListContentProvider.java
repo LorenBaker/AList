@@ -8,6 +8,7 @@ import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -16,7 +17,10 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 import android.text.TextUtils;
 
+import com.dropbox.sync.android.DbxAccount;
+import com.dropbox.sync.android.DbxAccountManager;
 import com.dropbox.sync.android.DbxDatastore;
+import com.dropbox.sync.android.DbxException;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
@@ -26,10 +30,18 @@ public class AListContentProvider extends ContentProvider {
 	private AListDatabaseHelper database = null;
 
 	// Dropbox database
-	private static DbxDatastore mDbxDatastore;
+	private DbxAccountManager mAccountManager = null;
+	private DbxAccount mAccount = null;
+	private static DbxDatastore mDbxDatastore = null;
+
+	private boolean mListsSyncedToDropbox;
 
 	public static void setDbxDatastore(DbxDatastore dbxDatastore) {
 		mDbxDatastore = dbxDatastore;
+	}
+
+	public static DbxDatastore getDbxDatastore() {
+		return mDbxDatastore;
 	}
 
 	private static Context mContext = null;
@@ -104,11 +116,30 @@ public class AListContentProvider extends ContentProvider {
 
 	@Override
 	public boolean onCreate() {
-		MyLog.i("AListContentProvider", "onCreate");
+		MyLog.i("AListContentProvider", "onCreate()");
 		// Construct the underlying database
 		// Defer opening the database until you need to perform
 		// a query or other transaction.
 		database = new AListDatabaseHelper(getContext());
+
+		// open the dbxDatastore if there are any lists synced to dropbox
+		SharedPreferences storedStates = getContext().getSharedPreferences("AList", Context.MODE_PRIVATE);
+		mListsSyncedToDropbox = storedStates.getBoolean("ListsSyncedToDropbox", false);
+
+		if (mListsSyncedToDropbox) {
+			mAccountManager = DbxAccountManager.getInstance(getContext(), AListUtilities.APP_KEY,
+					AListUtilities.APP_SECRET);
+
+			if (mAccountManager.hasLinkedAccount()) {
+				mAccount = mAccountManager.getLinkedAccount();
+				try {
+					mDbxDatastore = DbxDatastore.openDefault(mAccount);
+				} catch (DbxException e) {
+					MyLog.e("AListContentProvider", "onCreate(): DbxException while trying to openDefault datastore.");
+					e.printStackTrace();
+				}
+			}
+		}
 		return true;
 	}
 
@@ -680,8 +711,14 @@ public class AListContentProvider extends ContentProvider {
 						values.put(ItemsTable.COL_DATE_TIME_LAST_USED, Calendar.getInstance().getTimeInMillis());
 					}
 				}
-
+				// Perform the update
 				updateCount = db.update(ItemsTable.TABLE_ITEMS, values, selection, selectionArgs);
+
+				if (!mSuppressDropboxChanges) {
+					// ItemsTable.dbxUpdateMultipleRecords(mContext, mDbxDatastore, values, uri, selection,
+					// selectionArgs);
+				}
+
 				break;
 
 			case ITEMS_SINGLE_ROW:
@@ -699,6 +736,10 @@ public class AListContentProvider extends ContentProvider {
 				}
 				// Perform the update
 				updateCount = db.update(ItemsTable.TABLE_ITEMS, values, selection, selectionArgs);
+				if (!mSuppressDropboxChanges) {
+					// ItemsTable.dbxUpdateSingleRecord(mContext, mDbxDatastore, values, uri);
+				}
+
 				break;
 
 			case LIST_MULTI_ROWS:

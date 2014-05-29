@@ -283,6 +283,24 @@ public class ItemsTable {
 		return listID;
 	}
 
+	public static Cursor getAllItemsInListCursor(Context context, long listID, String sortOrder) {
+		Cursor cursor = null;
+		if (listID > 1) {
+			Uri uri = CONTENT_URI;
+			String[] projection = PROJECTION_ALL;
+			String selection = COL_LIST_ID + " = ?";
+			String selectionArgs[] = new String[] { String.valueOf(listID) };
+			ContentResolver cr = context.getContentResolver();
+			try {
+				cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
+			} catch (Exception e) {
+				MyLog.e("Exception error in ItemsTable: getAllItemsInListCursor.", "");
+				e.printStackTrace();
+			}
+		}
+		return cursor;
+	}
+
 	public static CursorLoader getAllItemsInList(Context context, long listID, String sortOrder) {
 		CursorLoader cursorLoader = null;
 		if (listID > 1) {
@@ -1280,13 +1298,28 @@ public class ItemsTable {
 	// Dropbox Datastore Methods
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	public static void dbxInsert(Context context, DbxDatastore dbxDatastore, long itemID) {
+	public static void dbxInsert(Context context, DbxDatastore dbxDatastore, long itemID) throws DbxException {
 		ContentValues values = setContentValues(context, itemID);
 		DbxRecord dbxRecord = dbxInsert(context, dbxDatastore, itemID, values);
 		setDbxRecordValues(dbxRecord, values);
+		dbxDatastore.sync();
 	}
 
-	public static DbxRecord dbxInsert(Context context, DbxDatastore dbxDatastore, long newRowID, ContentValues values) {
+	public static void dbxInsertAllItems(Context context, DbxDatastore dbxDatastore, long listID) throws DbxException {
+		Cursor itemsCursor = getAllItemsInListCursor(context, listID, null);
+		if (itemsCursor != null) {
+			while (itemsCursor.moveToNext()) {
+				ContentValues values = setContentValues(context, itemsCursor);
+				long itemID = itemsCursor.getLong(itemsCursor.getColumnIndexOrThrow(COL_ITEM_ID));
+				DbxRecord dbxRecord = dbxInsert(context, dbxDatastore, itemID, values);
+				setDbxRecordValues(dbxRecord, values);
+			}
+			dbxDatastore.sync();
+			itemsCursor.close();
+		}
+	}
+
+	public static DbxRecord dbxInsert(Context context, DbxDatastore dbxDatastore, long itemID, ContentValues values) {
 
 		DbxRecord newItemRecord = null;
 		if (dbxDatastore != null) {
@@ -1323,7 +1356,7 @@ public class ItemsTable {
 						ContentValues newFieldValues = new ContentValues();
 						newFieldValues.put(COL_ITEM_DROPBOX_ID, dbxID);
 						newFieldValues.put(COL_DATE_TIME_LAST_USED, nowMillis);
-						UpdateItemFieldValues(context, newRowID, newFieldValues);
+						UpdateItemFieldValues(context, itemID, newFieldValues);
 
 						MyLog.d("ItemsTable: dbxInsert ", "Key:" + key + ", value:" + itemName);
 						AListContentProvider.setSuppressDropboxChanges(false);
@@ -1529,12 +1562,9 @@ public class ItemsTable {
 		AListContentProvider.setSuppressDropboxChanges(false);
 	}
 
-	private static ContentValues setContentValues(Context context, long itemID) {
+	private static ContentValues setContentValues(Context context, Cursor cursor) {
 		ContentValues newFieldValues = new ContentValues();
-		Cursor cursor = getItem(context, itemID);
 		if (cursor != null) {
-			cursor.moveToFirst();
-
 			for (String col : PROJECTION_ALL) {
 				if (col.equals(COL_ITEM_ID) || col.equals(COL_ITEM_DROPBOX_ID)) {
 					// do nothing
@@ -1552,9 +1582,18 @@ public class ItemsTable {
 					newFieldValues.put(col, value);
 				}
 			}
+		}
+		return newFieldValues;
+	}
+
+	private static ContentValues setContentValues(Context context, long itemID) {
+		ContentValues newFieldValues = null;
+		Cursor cursor = getItem(context, itemID);
+		if (cursor != null) {
+			cursor.moveToFirst();
+			newFieldValues = setContentValues(context, cursor);
 			cursor.close();
 		}
-
 		return newFieldValues;
 	}
 
@@ -1620,9 +1659,14 @@ public class ItemsTable {
 				int sortOrder = (int) dbxRecord.getLong(COL_MANUAL_SORT_ORDER);
 				newFieldValues.put(COL_MANUAL_SORT_ORDER, sortOrder);
 			}
+
 			if (dbxRecord.hasField(COL_MANUAL_SORT_SWITCH)) {
-				int manualSortSwitch = (int) dbxRecord.getLong(COL_MANUAL_SORT_SWITCH);
-				newFieldValues.put(COL_MANUAL_SORT_SWITCH, manualSortSwitch);
+				boolean checked = dbxRecord.getBoolean(COL_MANUAL_SORT_SWITCH);
+				int checkedValue = 0;
+				if (checked) {
+					checkedValue = 1;
+				}
+				newFieldValues.put(COL_MANUAL_SORT_SWITCH, checkedValue);
 			}
 
 			if (dbxRecord.hasField(COL_DATE_TIME_LAST_USED)) {
@@ -1643,6 +1687,9 @@ public class ItemsTable {
 
 				if (key.equals(COL_ITEM_NAME)) {
 					String itemName = (String) me.getValue();
+					if (itemName == null) {
+						itemName = "";
+					}
 					dbxRecord.set(key, itemName);
 
 				} else if (key.equals(COL_ITEM_NUMBER)) {
@@ -1651,6 +1698,9 @@ public class ItemsTable {
 
 				} else if (key.equals(COL_ITEM_NOTE)) {
 					String itemNote = (String) me.getValue();
+					if (itemNote == null) {
+						itemNote = "";
+					}
 					dbxRecord.set(key, itemNote);
 
 				} else if (key.equals(COL_LIST_ID)) {
@@ -1687,11 +1737,7 @@ public class ItemsTable {
 
 				} else if (key.equals(COL_MANUAL_SORT_ORDER)) {
 					int manualSortOrderValue = (Integer) me.getValue();
-					boolean manualSortOrder = false;
-					if (manualSortOrderValue == 1) {
-						manualSortOrder = true;
-					}
-					dbxRecord.set(key, manualSortOrder);
+					dbxRecord.set(key, manualSortOrderValue);
 
 				} else if (key.equals(COL_MANUAL_SORT_SWITCH)) {
 					int manualSortSwitchValue = (Integer) me.getValue();

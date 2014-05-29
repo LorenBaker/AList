@@ -167,7 +167,7 @@ public class MasterListActivity extends FragmentActivity implements LoaderManage
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MyLog.i("MasterList_ACTIVITY", "onCreateOptionsMenu");
-		getMenuInflater().inflate(R.menu.master_list_1activity, menu);
+		getMenuInflater().inflate(R.menu.master_list_activity, menu);
 		return super.onCreateOptionsMenu(menu);
 	}
 

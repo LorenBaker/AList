@@ -258,21 +258,21 @@ public class ListSettings {
 	}
 
 	public String getListTitle() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getString(mListCursor.getColumnIndexOrThrow(ListsTable.COL_LIST_TITLE));
 		}
 		return "";
 	}
 
 	public long getActiveStoreID() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getLong(mListCursor.getColumnIndexOrThrow(ListsTable.COL_ACTIVE_STORE_ID));
 		}
 		return -1;
 	}
 
 	public boolean isManualSort() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			int value = mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_LIST_SORT_ORDER));
 			return value == AListUtilities.LIST_SORT_MANUAL;
 		}
@@ -280,7 +280,7 @@ public class ListSettings {
 	}
 
 	public boolean isGroupAdditonAllowed() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			int value = mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_ALLOW_GROUP_ADDITIONS));
 			return value == 1.;
 		}
@@ -288,7 +288,7 @@ public class ListSettings {
 	}
 
 	public boolean getShowGroupsInListsFragment() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			int value = mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_LIST_SORT_ORDER));
 			return value == AListUtilities.LIST_SORT_BY_GROUP;
 		}
@@ -296,7 +296,7 @@ public class ListSettings {
 	}
 
 	public boolean getShowGroupsInMasterListFragment() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			int value = mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_MASTER_LIST_SORT_ORDER));
 			return value == AListUtilities.MASTER_LIST_SORT_BY_GROUP;
 		}
@@ -304,7 +304,7 @@ public class ListSettings {
 	}
 
 	public boolean getShowStores() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			int value = mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_LIST_SORT_ORDER));
 			return value == AListUtilities.LIST_SORT_BY_STORE_LOCATION;
 		}
@@ -312,7 +312,7 @@ public class ListSettings {
 	}
 
 	public boolean getDeleteNoteUponDeselectingItem() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			int value = mListCursor.getInt(mListCursor
 					.getColumnIndexOrThrow(ListsTable.COL_DELETE_NOTE_UPON_DESELECTING_ITEM));
 			return value > 0;
@@ -321,77 +321,77 @@ public class ListSettings {
 	}
 
 	public int getListSortOrder() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_LIST_SORT_ORDER));
 		}
 		return -1;
 	}
 
 	public int getMasterListSortOrder() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_MASTER_LIST_SORT_ORDER));
 		}
 		return -1;
 	}
 
 	public int getTitleBackgroundColor() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_TITLE_BACKGROUND_COLOR));
 		}
 		return -1;
 	}
 
 	public int getTitleTextColor() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_TITLE_TEXT_COLOR));
 		}
 		return -1;
 	}
 
 	public int getSeparatorBackgroundColor() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_SEPARATOR_BACKGROUND_COLOR));
 		}
 		return -1;
 	}
 
 	public int getSeparatorTextColor() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_SEPARATOR_TEXT_COLOR));
 		}
 		return -1;
 	}
 
 	public int getListBackgroundColor() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_LIST_BACKGROUND_COLOR));
 		}
 		return -1;
 	}
 
 	public int getItemNormalTextColor() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_ITEM_NORMAL_TEXT_COLOR));
 		}
 		return -1;
 	}
 
 	public int getItemStrikeoutTextColor() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_ITEM_STRIKEOUT_TEXT_COLOR));
 		}
 		return -1;
 	}
 
 	public int getMasterListBackgroundColor() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_MASTER_LIST_BACKGROUND_COLOR));
 		}
 		return -1;
 	}
 
 	public int getMasterListItemNormalTextColor() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor
 					.getColumnIndexOrThrow(ListsTable.COL_MASTER_LIST_ITEM_NORMAL_TEXT_COLOR));
 		}
@@ -399,7 +399,7 @@ public class ListSettings {
 	}
 
 	public int getMasterListItemSelectedTextColor() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor
 					.getColumnIndexOrThrow(ListsTable.COL_MASTER_LIST_ITEM_SELECTED_TEXT_COLOR));
 		}
@@ -407,7 +407,7 @@ public class ListSettings {
 	}
 
 	public int getListViewFirstVisiblePosition() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor
 					.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_LISTVIEW_FIRST_VISIBLE_POSITION));
 		}
@@ -415,14 +415,14 @@ public class ListSettings {
 	}
 
 	public int getListViewTop() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_LISTVIEW_TOP));
 		}
 		return -1;
 	}
 
 	public int getMasterListViewFirstVisiblePosition() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor
 					.getColumnIndexOrThrow(ListsTable.COL_MASTER_LISTVIEW_FIRST_VISIBLE_POSITION));
 		}
@@ -430,28 +430,28 @@ public class ListSettings {
 	}
 
 	public int getMasterListViewTop() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_MASTER_LISTVIEW_TOP));
 		}
 		return -1;
 	}
 
 	public int getManageItemsGroupID() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getInt(mListCursor.getColumnIndexOrThrow(ListsTable.COL_MANAGE_ITEMS_GROUP_ID));
 		}
 		return -1;
 	}
 
 	public String getListDropboxID() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			return mListCursor.getString(mListCursor.getColumnIndexOrThrow(ListsTable.COL_LIST_DROPBOX_ID));
 		}
 		return "";
 	}
 
 	public boolean isListSyncedToDropbox() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			int isSynced = mListCursor.getInt(mListCursor
 					.getColumnIndexOrThrow(ListsTable.COL_IS_SYNCED_TO_DROPBOX));
 			return isSynced > 0;
@@ -460,7 +460,7 @@ public class ListSettings {
 	}
 
 	public boolean isListListPreferencesSyncedToDropbox() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			int isSynced = mListCursor.getInt(mListCursor
 					.getColumnIndexOrThrow(ListsTable.COL_IS_LIST_PREF_SYNCED_TO_DROPBOX));
 			return isSynced > 0;
@@ -469,7 +469,7 @@ public class ListSettings {
 	}
 
 	public boolean isFirstTimeSync() {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			int isSynced = mListCursor.getInt(mListCursor
 					.getColumnIndexOrThrow(ListsTable.COL_IS_FIRST_TIME_SYNC));
 			return isSynced > 0;
@@ -478,7 +478,7 @@ public class ListSettings {
 	}
 
 	public void updateListsTableFieldValues(ContentValues newFieldValues) {
-		if (mListCursor != null) {
+		if (mListCursor != null && mListCursor.getCount() > 0) {
 			ListsTable.UpdateListsTableFieldValues(mContext, mListID, newFieldValues);
 			this.RefreshListSettings();
 		}

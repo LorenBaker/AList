@@ -191,7 +191,7 @@ public class ManageLocationsActivity extends FragmentActivity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MyLog.i("ManageLocations_ACTIVITY", "onCreateOptionsMenu");
-		getMenuInflater().inflate(R.menu.manage_locations_1activity, menu);
+		getMenuInflater().inflate(R.menu.manage_locations_activity, menu);
 		return super.onCreateOptionsMenu(menu);
 	}
 

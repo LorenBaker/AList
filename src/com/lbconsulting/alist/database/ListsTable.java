@@ -602,13 +602,15 @@ public class ListsTable {
 	// Dropbox Datastore Methods
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	public static void dbxInsert(Context context, DbxDatastore dbxDatastore, long listID) {
+	public static void dbxInsert(Context context, DbxDatastore dbxDatastore, long listID) throws DbxException {
 		ContentValues values = setContentValues(context, listID);
 		DbxRecord dbxRecord = dbxInsert(context, dbxDatastore, listID, values);
 		setDbxRecordValues(dbxRecord, values);
+		dbxDatastore.sync();
 	}
 
-	public static DbxRecord dbxInsert(Context context, DbxDatastore dbxDatastore, long listID, ContentValues values) {
+	public static DbxRecord dbxInsert(Context context, DbxDatastore dbxDatastore, long listID, ContentValues values)
+			throws DbxException {
 		// This method create a new dbx List record with default values except for the list title.
 		// It quits after finding the list title from the content values
 		// To update the dbx feilds after the dbx list record has been created, use setDbxRecordValues
@@ -661,13 +663,7 @@ public class ListsTable {
 
 						MyLog.d("ListsTable: dbxInsert ", "Key:" + key + ", value:" + listTitle);
 						AListContentProvider.setSuppressDropboxChanges(false);
-						try {
-							dbxDatastore.sync();
-							break;
-						} catch (DbxException e) {
-							MyLog.e("ListsTable: dbxInsert", "DbxException! dbxDatastore.sync()");
-							e.printStackTrace();
-						}
+						dbxDatastore.sync();
 					}
 				}
 			}
@@ -865,7 +861,7 @@ public class ListsTable {
 					String value = cursor.getString(cursor.getColumnIndexOrThrow(col));
 					newFieldValues.put(col, value);
 
-				} else if (col.equals(COL_MANAGE_ITEMS_GROUP_ID)) {
+				} else if (col.equals(COL_MANAGE_ITEMS_GROUP_ID) || col.equals(COL_ACTIVE_STORE_ID)) {
 					long value = cursor.getLong(cursor.getColumnIndexOrThrow(col));
 					newFieldValues.put(col, value);
 
