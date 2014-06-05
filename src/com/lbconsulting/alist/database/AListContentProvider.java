@@ -3,6 +3,9 @@ package com.lbconsulting.alist.database;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import android.content.ContentProvider;
 import android.content.ContentUris;
@@ -17,10 +20,9 @@ import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 import android.text.TextUtils;
 
-import com.dropbox.sync.android.DbxAccount;
-import com.dropbox.sync.android.DbxAccountManager;
 import com.dropbox.sync.android.DbxDatastore;
 import com.dropbox.sync.android.DbxException;
+import com.dropbox.sync.android.DbxRecord;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
@@ -30,24 +32,43 @@ public class AListContentProvider extends ContentProvider {
 	private AListDatabaseHelper database = null;
 
 	// Dropbox database
-	private DbxAccountManager mAccountManager = null;
-	private DbxAccount mAccount = null;
-	private static DbxDatastore mDbxDatastore = null;
+	// private static DbxAccountManager mAccountManager = null;
+	// private static DbxAccount mAccount = null;
 
 	private boolean mListsSyncedToDropbox;
 
+	private static DbxDatastore mDbxDatastore = null;
+	private static Context mContext = null;
+	private static boolean mSuppressChangeNotification = false;
+	private static boolean mSuppressDropboxChanges = false;
+	private static boolean mLastSuppressDropboxChangeRequest = false;
+
 	public static void setDbxDatastore(DbxDatastore dbxDatastore) {
 		mDbxDatastore = dbxDatastore;
+		// update mSuppressDropboxChanges with the updated mDbxDatastore
+		setSuppressDropboxChanges(mLastSuppressDropboxChangeRequest);
 	}
 
 	public static DbxDatastore getDbxDatastore() {
 		return mDbxDatastore;
 	}
 
-	private static Context mContext = null;
-
 	public static void setContext(Context context) {
 		mContext = context;
+	}
+
+	public static void setSuppressChangeNotification(boolean supressChanges) {
+		mSuppressChangeNotification = supressChanges;
+	}
+
+	public static void setSuppressDropboxChanges(boolean suppressDropboxChanges) {
+		// TODO: remove line: suppressDropboxChanges = false
+		// suppressDropboxChanges = false;
+
+		mLastSuppressDropboxChangeRequest = suppressDropboxChanges;
+		// if free version always suppress dropbox changes
+		mSuppressDropboxChanges = suppressDropboxChanges || AListUtilities.isFreeVersion() || mDbxDatastore == null;
+		// mSuppressDropboxChanges = suppressDropboxChanges || AListUtilities.isFreeVersion();
 	}
 
 	// UriMatcher switch constants
@@ -72,19 +93,6 @@ public class AListContentProvider extends ContentProvider {
 	private static final int ITEMS_WITH_GROUPS = 70;
 	private static final int ITEMS_WITH_LOCATIONS = 71;
 	private static final int GROUPS_WITH_LOCATIONS = 72;
-
-	private static boolean mSuppressChangeNotification = false;
-
-	public static void setSuppressChangeNotification(boolean supressChanges) {
-		mSuppressChangeNotification = supressChanges;
-	}
-
-	private static boolean mSuppressDropboxChanges = false;
-
-	public static void setSuppressDropboxChanges(boolean suppressDropboxChanges) {
-		// if free version always suppress dropbox changes
-		mSuppressDropboxChanges = suppressDropboxChanges || AListUtilities.isFreeVersion();
-	}
 
 	public static final String AUTHORITY = "com.lbconsulting.alist.contentprovider";
 
@@ -126,21 +134,208 @@ public class AListContentProvider extends ContentProvider {
 		SharedPreferences storedStates = getContext().getSharedPreferences("AList", Context.MODE_PRIVATE);
 		mListsSyncedToDropbox = storedStates.getBoolean("ListsSyncedToDropbox", false);
 
-		if (mListsSyncedToDropbox) {
-			mAccountManager = DbxAccountManager.getInstance(getContext(), AListUtilities.APP_KEY,
-					AListUtilities.APP_SECRET);
+		/*		if (mListsSyncedToDropbox) {
+					mAccountManager = DbxAccountManager.getInstance(getContext(), AListUtilities.APP_KEY,
+							AListUtilities.APP_SECRET);
+					if (mAccountManager.hasLinkedAccount()) {
+						mAccount = mAccountManager.getLinkedAccount();
+						try {
+							setDbxDatastore(DbxDatastore.openDefault(mAccount));
 
-			if (mAccountManager.hasLinkedAccount()) {
-				mAccount = mAccountManager.getLinkedAccount();
-				try {
-					mDbxDatastore = DbxDatastore.openDefault(mAccount);
-				} catch (DbxException e) {
-					MyLog.e("AListContentProvider", "onCreate(): DbxException while trying to openDefault datastore.");
-					e.printStackTrace();
+						} catch (DbxException e) {
+							MyLog.e("AListContentProvider",
+									"setupDropbox(): DbxException while trying to openDefault datastore.");
+							e.printStackTrace();
+						}
+					}
+				}*/
+		return true;
+	}
+
+	public static void onDatastoreStatusChange(DbxDatastore store) {
+		mDbxDatastore = store;
+		if (store.getSyncStatus().hasIncoming) {
+			// Handle the updated data
+			try {
+				Map<String, Set<DbxRecord>> changes = mDbxDatastore.sync();
+
+				setSuppressDropboxChanges(true);
+				for (Map.Entry<String, Set<DbxRecord>> table : changes.entrySet()) {
+					String tableName = table.getKey();
+
+					if (tableName.equals(ItemsTable.TABLE_ITEMS)) {
+						Set<?> recordSet = table.getValue();
+						Iterator<?> itr = recordSet.iterator();
+						while (itr.hasNext()) {
+							DbxRecord dbxRecord = (DbxRecord) itr.next();
+							String dbxRecordID = dbxRecord.getId();
+
+							if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
+								if (dbxRecord.isDeleted()) {
+									ItemsTable.DeleteItem(mContext, dbxRecordID);
+								} else {
+									// record is either a new or revised record
+									// try and get the SQLite record
+									Cursor itemCursor = ItemsTable.getItemFromDropboxID(mContext, dbxRecordID);
+									if (itemCursor != null && itemCursor.getCount() > 0) {
+										// update the existing record
+										ItemsTable.UpdateItem(mContext, dbxRecordID, dbxRecord);
+									} else {
+										// create a new record
+										ItemsTable.CreateItem(mContext, dbxRecord);
+									}
+									if (itemCursor != null) {
+										itemCursor.close();
+									}
+								}
+							}
+						}
+
+					} else if (tableName.equals(ListsTable.TABLE_LISTS)) {
+						Set<?> recordSet = table.getValue();
+						Iterator<?> itr = recordSet.iterator();
+						while (itr.hasNext()) {
+							DbxRecord dbxRecord = (DbxRecord) itr.next();
+							String dbxRecordID = dbxRecord.getId();
+
+							if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
+								if (dbxRecord.isDeleted()) {
+									ListsTable.DeleteList(mContext, dbxRecordID);
+								} else {
+									// record is either a new or revised record
+									// try and get the SQLite record
+									Cursor itemCursor = ListsTable.getListFromDropboxID(mContext, dbxRecordID);
+									if (itemCursor != null && itemCursor.getCount() > 0) {
+										// update the existing record
+										ListsTable.UpdateList(mContext, dbxRecordID, dbxRecord);
+									} else {
+										// create a new record
+										ListsTable.CreateNewList(mContext, dbxRecord);
+									}
+									if (itemCursor != null) {
+										itemCursor.close();
+									}
+								}
+							}
+						}
+					} else if (tableName.equals(GroupsTable.TABLE_GROUPS)) {
+						Set<?> recordSet = table.getValue();
+						Iterator<?> itr = recordSet.iterator();
+						while (itr.hasNext()) {
+							DbxRecord dbxRecord = (DbxRecord) itr.next();
+							String dbxRecordID = dbxRecord.getId();
+
+							if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
+								if (dbxRecord.isDeleted()) {
+									GroupsTable.DeleteGroup(mContext, dbxRecordID);
+								} else {
+									// record is either a new or revised record
+									// try and get the SQLite record
+									Cursor itemCursor = GroupsTable.getGroupFromDropboxID(mContext, dbxRecordID);
+									if (itemCursor != null && itemCursor.getCount() > 0) {
+										// update the existing record
+										GroupsTable.UpdateGroup(mContext, dbxRecordID, dbxRecord);
+									} else {
+										// create a new record
+										GroupsTable.CreateGroup(mContext, dbxRecord);
+									}
+									if (itemCursor != null) {
+										itemCursor.close();
+									}
+								}
+							}
+						}
+					} else if (tableName.equals(LocationsTable.TABLE_LOCATIONS)) {
+						Set<?> recordSet = table.getValue();
+						Iterator<?> itr = recordSet.iterator();
+						while (itr.hasNext()) {
+							DbxRecord dbxRecord = (DbxRecord) itr.next();
+							String dbxRecordID = dbxRecord.getId();
+
+							if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
+								if (dbxRecord.isDeleted()) {
+									LocationsTable.DeleteLocation(mContext, dbxRecordID);
+								} else {
+									// record is either a new or revised record
+									// try and get the SQLite record
+									Cursor itemCursor = LocationsTable.getLocationFromDropboxID(mContext, dbxRecordID);
+									if (itemCursor != null && itemCursor.getCount() > 0) {
+										// update the existing record
+										LocationsTable.UpdateLocation(mContext, dbxRecordID, dbxRecord);
+									} else {
+										// create a new record
+										LocationsTable.CreateLocation(mContext, dbxRecord);
+									}
+									if (itemCursor != null) {
+										itemCursor.close();
+									}
+								}
+							}
+						}
+					} else if (tableName.equals(StoresTable.TABLE_STORES)) {
+						Set<?> recordSet = table.getValue();
+						Iterator<?> itr = recordSet.iterator();
+						while (itr.hasNext()) {
+							DbxRecord dbxRecord = (DbxRecord) itr.next();
+							String dbxRecordID = dbxRecord.getId();
+
+							if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
+								if (dbxRecord.isDeleted()) {
+									StoresTable.DeleteStore(mContext, dbxRecordID);
+								} else {
+									// record is either a new or revised record
+									// try and get the SQLite record
+									Cursor itemCursor = StoresTable.getStoreFromDropboxID(mContext, dbxRecordID);
+									if (itemCursor != null && itemCursor.getCount() > 0) {
+										// update the existing record
+										StoresTable.UpdateStore(mContext, dbxRecordID, dbxRecord);
+									} else {
+										// create a new record
+										StoresTable.CreateStore(mContext, dbxRecord);
+									}
+									if (itemCursor != null) {
+										itemCursor.close();
+									}
+								}
+							}
+						}
+					} else if (tableName.equals(BridgeTable.TABLE_BRIDGE)) {
+						Set<?> recordSet = table.getValue();
+						Iterator<?> itr = recordSet.iterator();
+						while (itr.hasNext()) {
+							DbxRecord dbxRecord = (DbxRecord) itr.next();
+							String dbxRecordID = dbxRecord.getId();
+
+							if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
+								if (dbxRecord.isDeleted()) {
+									BridgeTable.DeleteBridgeRow(mContext, dbxRecordID);
+								} else {
+									// record is either a new or revised record
+									// try and get the SQLite record
+									Cursor itemCursor = BridgeTable.getBridgeRowFromDropboxID(mContext, dbxRecordID);
+									if (itemCursor != null && itemCursor.getCount() > 0) {
+										// update the existing record
+										BridgeTable.UpdateBridgeRow(mContext, dbxRecordID, dbxRecord);
+									} else {
+										// create a new record
+										BridgeTable.CreateBridgeRow(mContext, dbxRecord);
+									}
+									if (itemCursor != null) {
+										itemCursor.close();
+									}
+								}
+							}
+						}
+					}
+
 				}
+			} catch (DbxException e) {
+				MyLog.e("AListContentProvider: onDatastoreStatusChange ", "DbxException.");
+				e.printStackTrace();
+			} finally {
+				setSuppressDropboxChanges(false);
 			}
 		}
-		return true;
 	}
 
 	/*A content provider is created when its hosting process is created, 
@@ -222,7 +417,7 @@ public class AListContentProvider extends ContentProvider {
 				}
 
 				if (!mSuppressDropboxChanges) {
-					GroupsTable.dbxDeleteMultipleRecords(mContext, uri, selection, selectionArgs);
+					GroupsTable.dbxDeleteMultipleRecords(mContext, mDbxDatastore, uri, selection, selectionArgs);
 				}
 
 				// Perform the deletion
@@ -235,7 +430,7 @@ public class AListContentProvider extends ContentProvider {
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 
 				if (!mSuppressDropboxChanges) {
-					GroupsTable.dbxDeleteSingleRecord(mContext, rowIDstring);
+					GroupsTable.dbxDeleteSingleRecord(mContext, mDbxDatastore, rowIDstring);
 				}
 
 				// Perform the deletion
@@ -247,7 +442,7 @@ public class AListContentProvider extends ContentProvider {
 					selection = "1";
 				}
 				if (!mSuppressDropboxChanges) {
-					StoresTable.dbxDeleteMultipleRecords(mContext, uri, selection, selectionArgs);
+					StoresTable.dbxDeleteMultipleRecords(mContext, mDbxDatastore, uri, selection, selectionArgs);
 				}
 
 				// Perform the deletion
@@ -260,7 +455,7 @@ public class AListContentProvider extends ContentProvider {
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 
 				if (!mSuppressDropboxChanges) {
-					StoresTable.dbxDeleteSingleRecord(mContext, rowIDstring);
+					StoresTable.dbxDeleteSingleRecord(mContext, mDbxDatastore, rowIDstring);
 				}
 
 				// Perform the deletion
@@ -273,7 +468,7 @@ public class AListContentProvider extends ContentProvider {
 				}
 
 				if (!mSuppressDropboxChanges) {
-					LocationsTable.dbxDeleteMultipleRecords(mContext, uri, selection, selectionArgs);
+					LocationsTable.dbxDeleteMultipleRecords(mContext, mDbxDatastore, uri, selection, selectionArgs);
 				}
 
 				// Perform the deletion
@@ -286,7 +481,7 @@ public class AListContentProvider extends ContentProvider {
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 
 				if (!mSuppressDropboxChanges) {
-					LocationsTable.dbxDeleteSingleRecord(mContext, rowIDstring);
+					LocationsTable.dbxDeleteSingleRecord(mContext, mDbxDatastore, rowIDstring);
 				}
 
 				// Perform the deletion
@@ -299,7 +494,7 @@ public class AListContentProvider extends ContentProvider {
 				}
 
 				if (!mSuppressDropboxChanges) {
-					BridgeTable.dbxDeleteMultipleRecords(mContext, uri, selection, selectionArgs);
+					BridgeTable.dbxDeleteMultipleRecords(mContext, mDbxDatastore, uri, selection, selectionArgs);
 				}
 
 				// Perform the deletion
@@ -312,7 +507,7 @@ public class AListContentProvider extends ContentProvider {
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 
 				if (!mSuppressDropboxChanges) {
-					BridgeTable.dbxDeleteSingleRecord(mContext, rowIDstring);
+					BridgeTable.dbxDeleteSingleRecord(mContext, mDbxDatastore, rowIDstring);
 				}
 
 				// Perform the deletion
@@ -377,7 +572,7 @@ public class AListContentProvider extends ContentProvider {
 	public Uri insert(Uri uri, ContentValues values) {
 
 		SQLiteDatabase db = null;
-		long newrowIDstring = 0;
+		long newRowID = 0;
 		String nullColumnHack = null;
 
 		// Open a WritableDatabase database to support the insert transaction
@@ -387,10 +582,19 @@ public class AListContentProvider extends ContentProvider {
 		switch (uriType) {
 			case ITEMS_MULTI_ROWS:
 				values.put(ItemsTable.COL_DATE_TIME_LAST_USED, Calendar.getInstance().getTimeInMillis());
-				newrowIDstring = db.insertOrThrow(ItemsTable.TABLE_ITEMS, nullColumnHack, values);
-				if (newrowIDstring > 0) {
+				newRowID = db.insertOrThrow(ItemsTable.TABLE_ITEMS, nullColumnHack, values);
+				if (newRowID > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(ItemsTable.CONTENT_URI, newrowIDstring);
+					Uri newRowUri = ContentUris.withAppendedId(ItemsTable.CONTENT_URI, newRowID);
+
+					if (!mSuppressDropboxChanges) {
+						try {
+							ItemsTable.dbxInsert(mContext, mDbxDatastore, newRowID, values);
+						} catch (DbxException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
 
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
@@ -411,10 +615,20 @@ public class AListContentProvider extends ContentProvider {
 						"Method insert: Cannon insert a new row with a single row URI. Illegal URI: " + uri);
 
 			case LIST_MULTI_ROWS:
-				newrowIDstring = db.insertOrThrow(ListsTable.TABLE_LISTS, nullColumnHack, values);
-				if (newrowIDstring > 0) {
+				newRowID = db.insertOrThrow(ListsTable.TABLE_LISTS, nullColumnHack, values);
+				if (newRowID > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(ListsTable.CONTENT_URI, newrowIDstring);
+					Uri newRowUri = ContentUris.withAppendedId(ListsTable.CONTENT_URI, newRowID);
+
+					try {
+						if (!mSuppressDropboxChanges) {
+							ListsTable.dbxInsert(mContext, mDbxDatastore, newRowID, values);
+						}
+					} catch (DbxException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
 						getContext().getContentResolver().notifyChange(ListsTable.CONTENT_URI, null);
@@ -434,10 +648,15 @@ public class AListContentProvider extends ContentProvider {
 						"Method insert: Cannot insert a new row with a single row URI. Illegal URI: " + uri);
 
 			case GROUPS_MULTI_ROWS:
-				newrowIDstring = db.insertOrThrow(GroupsTable.TABLE_GROUPS, nullColumnHack, values);
-				if (newrowIDstring > 0) {
+				newRowID = db.insertOrThrow(GroupsTable.TABLE_GROUPS, nullColumnHack, values);
+				if (newRowID > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(GroupsTable.CONTENT_URI, newrowIDstring);
+					Uri newRowUri = ContentUris.withAppendedId(GroupsTable.CONTENT_URI, newRowID);
+
+					if (!mSuppressDropboxChanges) {
+						GroupsTable.dbxInsert(mContext, mDbxDatastore, newRowID, values);
+					}
+
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
 						getContext().getContentResolver().notifyChange(GroupsTable.CONTENT_URI, null);
@@ -457,10 +676,15 @@ public class AListContentProvider extends ContentProvider {
 						"Method insert: Cannot insert a new row with a single row URI. Illegal URI: " + uri);
 
 			case STORES_MULTI_ROWS:
-				newrowIDstring = db.insertOrThrow(StoresTable.TABLE_STORES, nullColumnHack, values);
-				if (newrowIDstring > 0) {
+				newRowID = db.insertOrThrow(StoresTable.TABLE_STORES, nullColumnHack, values);
+				if (newRowID > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(StoresTable.CONTENT_URI, newrowIDstring);
+					Uri newRowUri = ContentUris.withAppendedId(StoresTable.CONTENT_URI, newRowID);
+
+					if (!mSuppressDropboxChanges) {
+						StoresTable.dbxInsert(mContext, mDbxDatastore, newRowID, values);
+					}
+
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
 						getContext().getContentResolver().notifyChange(StoresTable.CONTENT_URI, null);
@@ -474,10 +698,14 @@ public class AListContentProvider extends ContentProvider {
 						"Method insert: Cannot insert a new row with a single row URI. Illegal URI: " + uri);
 
 			case LOCATIONS_MULTI_ROWS:
-				newrowIDstring = db.insertOrThrow(LocationsTable.TABLE_LOCATIONS, nullColumnHack, values);
-				if (newrowIDstring > 0) {
+				newRowID = db.insertOrThrow(LocationsTable.TABLE_LOCATIONS, nullColumnHack, values);
+				if (newRowID > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(LocationsTable.CONTENT_URI, newrowIDstring);
+					Uri newRowUri = ContentUris.withAppendedId(LocationsTable.CONTENT_URI, newRowID);
+
+					if (!mSuppressDropboxChanges) {
+						LocationsTable.dbxInsert(mContext, mDbxDatastore, newRowID, values);
+					}
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
 						getContext().getContentResolver().notifyChange(LocationsTable.CONTENT_URI, null);
@@ -497,10 +725,15 @@ public class AListContentProvider extends ContentProvider {
 						"Method insert: Cannot insert a new row with a single row URI. Illegal URI: " + uri);
 
 			case BRIDGE_MULTI_ROWS:
-				newrowIDstring = db.insertOrThrow(BridgeTable.TABLE_BRIDGE, nullColumnHack, values);
-				if (newrowIDstring > 0) {
+				newRowID = db.insertOrThrow(BridgeTable.TABLE_BRIDGE, nullColumnHack, values);
+				if (newRowID > 0) {
 					// Construct and return the URI of the newly inserted row.
-					Uri newRowUri = ContentUris.withAppendedId(BridgeTable.CONTENT_URI, newrowIDstring);
+					Uri newRowUri = ContentUris.withAppendedId(BridgeTable.CONTENT_URI, newRowID);
+
+					if (!mSuppressDropboxChanges) {
+						BridgeTable.dbxInsert(mContext, mDbxDatastore, newRowID, values);
+					}
+
 					if (!mSuppressChangeNotification) {
 						// Notify and observers of the change in the database.
 						getContext().getContentResolver().notifyChange(BridgeTable.CONTENT_URI, null);
@@ -711,14 +944,13 @@ public class AListContentProvider extends ContentProvider {
 						values.put(ItemsTable.COL_DATE_TIME_LAST_USED, Calendar.getInstance().getTimeInMillis());
 					}
 				}
+
 				// Perform the update
-				updateCount = db.update(ItemsTable.TABLE_ITEMS, values, selection, selectionArgs);
-
 				if (!mSuppressDropboxChanges) {
-					// ItemsTable.dbxUpdateMultipleRecords(mContext, mDbxDatastore, values, uri, selection,
-					// selectionArgs);
+					ItemsTable.dbxUpdateMultipleRecords(mContext, mDbxDatastore, values, uri, selection,
+							selectionArgs);
 				}
-
+				updateCount = db.update(ItemsTable.TABLE_ITEMS, values, selection, selectionArgs);
 				break;
 
 			case ITEMS_SINGLE_ROW:
@@ -735,15 +967,18 @@ public class AListContentProvider extends ContentProvider {
 					}
 				}
 				// Perform the update
-				updateCount = db.update(ItemsTable.TABLE_ITEMS, values, selection, selectionArgs);
 				if (!mSuppressDropboxChanges) {
-					// ItemsTable.dbxUpdateSingleRecord(mContext, mDbxDatastore, values, uri);
+					ItemsTable.dbxUpdateSingleRecord(mContext, mDbxDatastore, values, uri);
 				}
+				updateCount = db.update(ItemsTable.TABLE_ITEMS, values, selection, selectionArgs);
 
 				break;
 
 			case LIST_MULTI_ROWS:
 				// Perform the update
+				if (!mSuppressDropboxChanges) {
+					ListsTable.dbxUpdateMultipleRecords(mContext, mDbxDatastore, values, uri, selection, selectionArgs);
+				}
 				updateCount = db.update(ListsTable.TABLE_LISTS, values, selection, selectionArgs);
 				break;
 
@@ -753,11 +988,18 @@ public class AListContentProvider extends ContentProvider {
 				selection = ListsTable.COL_LIST_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 				// Perform the update
+				if (!mSuppressDropboxChanges) {
+					ListsTable.dbxUpdateSingleRecord(mContext, mDbxDatastore, values, uri);
+				}
 				updateCount = db.update(ListsTable.TABLE_LISTS, values, selection, selectionArgs);
 				break;
 
 			case GROUPS_MULTI_ROWS:
 				// Perform the update
+				if (!mSuppressDropboxChanges) {
+					GroupsTable.dbxUpdateMultipleRecords(mContext, mDbxDatastore, values, uri, selection,
+							selectionArgs);
+				}
 				updateCount = db.update(GroupsTable.TABLE_GROUPS, values, selection, selectionArgs);
 				break;
 
@@ -767,11 +1009,18 @@ public class AListContentProvider extends ContentProvider {
 				selection = GroupsTable.COL_GROUP_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 				// Perform the update
+				if (!mSuppressDropboxChanges) {
+					GroupsTable.dbxUpdateSingleRecord(mContext, mDbxDatastore, values, uri);
+				}
 				updateCount = db.update(GroupsTable.TABLE_GROUPS, values, selection, selectionArgs);
 				break;
 
 			case STORES_MULTI_ROWS:
 				// Perform the update
+				if (!mSuppressDropboxChanges) {
+					StoresTable.dbxUpdateMultipleRecords(mContext, mDbxDatastore, values, uri, selection,
+							selectionArgs);
+				}
 				updateCount = db.update(StoresTable.TABLE_STORES, values, selection, selectionArgs);
 				break;
 
@@ -781,11 +1030,18 @@ public class AListContentProvider extends ContentProvider {
 				selection = StoresTable.COL_STORE_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 				// Perform the update
+				if (!mSuppressDropboxChanges) {
+					StoresTable.dbxUpdateSingleRecord(mContext, mDbxDatastore, values, uri);
+				}
 				updateCount = db.update(StoresTable.TABLE_STORES, values, selection, selectionArgs);
 				break;
 
 			case LOCATIONS_MULTI_ROWS:
 				// Perform the update
+				if (!mSuppressDropboxChanges) {
+					LocationsTable.dbxUpdateMultipleRecords(mContext, mDbxDatastore, values, uri, selection,
+							selectionArgs);
+				}
 				updateCount = db.update(LocationsTable.TABLE_LOCATIONS, values, selection, selectionArgs);
 				break;
 
@@ -795,11 +1051,18 @@ public class AListContentProvider extends ContentProvider {
 				selection = LocationsTable.COL_LOCATION_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 				// Perform the update
+				if (!mSuppressDropboxChanges) {
+					LocationsTable.dbxUpdateSingleRecord(mContext, mDbxDatastore, values, uri);
+				}
 				updateCount = db.update(LocationsTable.TABLE_LOCATIONS, values, selection, selectionArgs);
 				break;
 
 			case BRIDGE_MULTI_ROWS:
 				// Perform the update
+				if (!mSuppressDropboxChanges) {
+					BridgeTable.dbxUpdateMultipleRecords(mContext, mDbxDatastore, values, uri, selection,
+							selectionArgs);
+				}
 				updateCount = db.update(BridgeTable.TABLE_BRIDGE, values, selection, selectionArgs);
 				break;
 
@@ -809,6 +1072,9 @@ public class AListContentProvider extends ContentProvider {
 				selection = BridgeTable.COL_BRIDGE_ID + "=" + rowIDstring
 						+ (!TextUtils.isEmpty(selection) ? " AND (" + selection + ")" : "");
 				// Perform the update
+				if (!mSuppressDropboxChanges) {
+					BridgeTable.dbxUpdateSingleRecord(mContext, mDbxDatastore, values, uri);
+				}
 				updateCount = db.update(BridgeTable.TABLE_BRIDGE, values, selection, selectionArgs);
 				break;
 
@@ -948,4 +1214,5 @@ public class AListContentProvider extends ContentProvider {
 	public AListDatabaseHelper getOpenHelperForTest() {
 		return database;
 	}
+
 }

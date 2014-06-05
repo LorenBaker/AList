@@ -17,6 +17,7 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.dropbox.sync.android.DbxDatastore;
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ManageLocationsPagerAdaptor;
 import com.lbconsulting.alist.classes.AListEvents.ActiveLocationChanged;
@@ -31,7 +32,9 @@ import com.lbconsulting.alist.utilities.MyLog;
 
 import de.greenrobot.event.EventBus;
 
-public class ManageLocationsActivity extends FragmentActivity {
+public class ManageLocationsActivity extends FragmentActivity implements DbxDatastore.SyncStatusListener {
+
+	private DbxDatastore mDbxDatastore = null;
 
 	private long mActiveListID = -1;
 	private long mActiveLocationID = -1;
@@ -50,7 +53,6 @@ public class ManageLocationsActivity extends FragmentActivity {
 		MyLog.i("ManageLocations_ACTIVITY", "onCreate");
 		super.onCreate(savedInstanceState);
 
-		AListContentProvider.setContext(this);
 		EventBus.getDefault().register(this);
 
 		Intent intent = getIntent();
@@ -157,6 +159,15 @@ public class ManageLocationsActivity extends FragmentActivity {
 		mActiveListID = storedStates.getLong("ActiveListID", -1);
 		mListSettings = new ListSettings(this, mActiveListID);
 		mActiveStoreID = mListSettings.getActiveStoreID();
+
+		AListContentProvider.setContext(this);
+		if (mDbxDatastore == null) {
+			mDbxDatastore = AListContentProvider.getDbxDatastore();
+		}
+		if (mDbxDatastore != null) {
+			mDbxDatastore.addSyncStatusListener(this);
+		}
+
 		mAllStoresCursor = StoresTable.getAllStoresInListCursor(this, mActiveListID, StoresTable.SORT_ORDER_STORE_NAME);
 		if (mAllStoresCursor != null && mAllStoresCursor.getCount() > 0) {
 			if (mActiveStoreID > 0) {
@@ -173,12 +184,16 @@ public class ManageLocationsActivity extends FragmentActivity {
 			// so... start the stores activity
 			StartStoresActivity();
 		}
+
 		super.onResume();
 	}
 
 	@Override
 	protected void onPause() {
 		MyLog.i("ManageLocations_ACTIVITY", "onPause");
+		if (mDbxDatastore != null) {
+			mDbxDatastore.removeSyncStatusListener(this);
+		}
 		super.onPause();
 	}
 
@@ -298,10 +313,16 @@ public class ManageLocationsActivity extends FragmentActivity {
 
 	@Override
 	protected void onDestroy() {
-		AListContentProvider.setContext(null);
+		// AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		MyLog.i("ManageLocations_ACTIVITY", "onDestroy");
 		super.onDestroy();
+	}
+
+	@Override
+	public void onDatastoreStatusChange(DbxDatastore arg0) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

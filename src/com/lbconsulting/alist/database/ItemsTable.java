@@ -516,25 +516,6 @@ public class ItemsTable {
 		return cursor;
 	}
 
-	private static Cursor getAllDbxItemsCursor(Context context) {
-		Cursor cursor = null;
-
-		Uri uri = CONTENT_URI;
-		String[] projection = new String[] { COL_ITEM_ID, COL_ITEM_DROPBOX_ID };
-
-		String selection = COL_ITEM_DROPBOX_ID + " != '' OR " + COL_ITEM_DROPBOX_ID + " NOT NULL";
-		String selectionArgs[] = null;
-
-		ContentResolver cr = context.getContentResolver();
-		try {
-			cursor = cr.query(uri, projection, selection, selectionArgs, SORT_ORDER_ITEM_NAME);
-		} catch (Exception e) {
-			MyLog.e("Exception error  in getAllDbxItemsCursor. ", "");
-			e.printStackTrace();
-		}
-		return cursor;
-	}
-
 	public static Cursor getAllItemsWithGroups(Context context, long listID) {
 		Cursor cursor = null;
 		if (listID > 1) {
@@ -1319,7 +1300,8 @@ public class ItemsTable {
 		}
 	}
 
-	public static DbxRecord dbxInsert(Context context, DbxDatastore dbxDatastore, long itemID, ContentValues values) {
+	public static DbxRecord dbxInsert(Context context, DbxDatastore dbxDatastore, long itemID, ContentValues values)
+			throws DbxException {
 
 		DbxRecord newItemRecord = null;
 		if (dbxDatastore != null) {
@@ -1358,15 +1340,14 @@ public class ItemsTable {
 						newFieldValues.put(COL_DATE_TIME_LAST_USED, nowMillis);
 						UpdateItemFieldValues(context, itemID, newFieldValues);
 
-						MyLog.d("ItemsTable: dbxInsert ", "Key:" + key + ", value:" + itemName);
+						MyLog.d("ItemsTable: dbxInsert ", key + ":" + itemName);
 						AListContentProvider.setSuppressDropboxChanges(false);
 
-						// TODO: only needed for Locations Table!!!!!!!!
-					} else if (key.equals(COL_ITEM_NUMBER)) {
-						int itemNumber = (Integer) me.getValue();
+					} else if (key.equals(COL_LIST_ID)) {
+						long listID = (Long) me.getValue();
 						if (newItemRecord != null) {
-							newItemRecord.set(key, itemNumber);
-							MyLog.d("ItemsTable: dbxInsert ", "Key:" + key + ", value:" + itemNumber);
+							newItemRecord.set(key, listID);
+							MyLog.d("ItemsTable: dbxInsert ", key + ":" + listID);
 						}
 					}
 				}
@@ -1394,7 +1375,7 @@ public class ItemsTable {
 			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
 
 			String dbxRecordID = getDropboxID(context, Long.parseLong(itemIDstring));
-			if (!dbxRecordID.isEmpty()) {
+			if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
 				try {
 					DbxRecord dbxRecord = dbxActiveTable.get(dbxRecordID);
 					if (dbxRecord != null) {
@@ -1530,7 +1511,7 @@ public class ItemsTable {
 			if (dbxActiveTable != null) {
 				String rowIDstring = uri.getLastPathSegment();
 				String dbxRecordID = getDropboxID(context, Long.parseLong(rowIDstring));
-				if (!dbxRecordID.isEmpty()) {
+				if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
 					try {
 						DbxRecord dbxRecord = dbxActiveTable.get(dbxRecordID);
 						if (dbxRecord != null) {
@@ -1661,12 +1642,8 @@ public class ItemsTable {
 			}
 
 			if (dbxRecord.hasField(COL_MANUAL_SORT_SWITCH)) {
-				boolean checked = dbxRecord.getBoolean(COL_MANUAL_SORT_SWITCH);
-				int checkedValue = 0;
-				if (checked) {
-					checkedValue = 1;
-				}
-				newFieldValues.put(COL_MANUAL_SORT_SWITCH, checkedValue);
+				int sortSwitch = (int) dbxRecord.getLong(COL_MANUAL_SORT_SWITCH);
+				newFieldValues.put(COL_MANUAL_SORT_SWITCH, sortSwitch);
 			}
 
 			if (dbxRecord.hasField(COL_DATE_TIME_LAST_USED)) {
@@ -1741,15 +1718,14 @@ public class ItemsTable {
 
 				} else if (key.equals(COL_MANUAL_SORT_SWITCH)) {
 					int manualSortSwitchValue = (Integer) me.getValue();
-					boolean manualSortSwitch = false;
-					if (manualSortSwitchValue == 1) {
-						manualSortSwitch = true;
-					}
-					dbxRecord.set(key, manualSortSwitch);
+					dbxRecord.set(key, manualSortSwitchValue);
 
 				} else if (key.equals(COL_DATE_TIME_LAST_USED)) {
 					long lastDate = (Long) me.getValue();
 					dbxRecord.set(key, lastDate);
+
+				} else if (key.equals(COL_ITEM_DROPBOX_ID)) {
+					// do nothing
 
 				} else {
 					MyLog.e("ItemsTable: setDbxRecordValues ", "Unknown column name:" + key);
@@ -1758,90 +1734,109 @@ public class ItemsTable {
 		}
 	}
 
-	public static void replaceSqlRecordsWithDbxRecords(Context context, DbxDatastore dbxDatastore) {
+	/*	public static void replaceSqlRecordsWithDbxRecords(Context context, DbxDatastore dbxDatastore) {
+	MAY NEED TO CHECK IF SQL RECORD ALREADY EXISTS
+			if (dbxDatastore != null) {
+				DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
+				if (dbxActiveTable != null) {
+					try {
+						DbxTable.QueryResult allRecords = dbxActiveTable.query();
+						Iterator<DbxRecord> itr = allRecords.iterator();
+						while (itr.hasNext()) {
+							DbxRecord dbxRecord = itr.next();
+							CreateItem(context, dbxRecord);
+						}
 
-		if (dbxDatastore != null) {
-			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_ITEMS);
-			if (dbxActiveTable != null) {
-				try {
-					DbxTable.QueryResult allRecords = dbxActiveTable.query();
-					Iterator<DbxRecord> itr = allRecords.iterator();
-					while (itr.hasNext()) {
-						DbxRecord dbxRecord = itr.next();
-						CreateItem(context, dbxRecord);
+					} catch (DbxException e) {
+						MyLog.e("ItemsTable: replaceSqlRecordsWithDbxRecords ",
+								"DbxException while replacing all sql records.");
+						e.printStackTrace();
 					}
-
-				} catch (DbxException e) {
-					MyLog.e("ItemsTable: replaceSqlRecordsWithDbxRecords ",
-							"DbxException while replacing all sql records.");
-					e.printStackTrace();
 				}
-			}
 
-		} else {
-			MyLog.e("ItemsTable: replaceSqlRecordsWithDbxRecords ",
-					"Unable to replace sql records. dbxDatastore is null!");
-		}
-	}
+			} else {
+				MyLog.e("ItemsTable: replaceSqlRecordsWithDbxRecords ",
+						"Unable to replace sql records. dbxDatastore is null!");
+			}
+		}*/
 
 	public static void validateSqlRecords(Context context, DbxTable dbxTable) {
 		if (dbxTable != null) {
 
 			// Iterate thru the SQL table records and verify if the SQL record exists in the Dbx table.
 			// If not ... delete the SQL table record
-			Cursor allItemsCursor = getAllDbxItemsCursor(context);
+			Cursor allDbxItemsCursor = getAllDbxItemsCursor(context);
 			String dbxRecordID = "";
 			long sqlRecordID = -1;
 			DbxRecord dbxRecord = null;
-			if (allItemsCursor != null && allItemsCursor.getCount() > 0) {
-				while (allItemsCursor.moveToNext()) {
+			if (allDbxItemsCursor != null && allDbxItemsCursor.getCount() > 0) {
+				while (allDbxItemsCursor.moveToNext()) {
 
 					try {
-						dbxRecordID = allItemsCursor.getString(allItemsCursor
+						dbxRecordID = allDbxItemsCursor.getString(allDbxItemsCursor
 								.getColumnIndexOrThrow(COL_ITEM_DROPBOX_ID));
 						dbxRecord = dbxTable.get(dbxRecordID);
 						if (dbxRecord == null) {
 							// the SQL table record does not exist in the Dbx table ... so delete it.
-							sqlRecordID = allItemsCursor.getLong(allItemsCursor.getColumnIndexOrThrow(COL_ITEM_ID));
+							sqlRecordID = allDbxItemsCursor.getLong(allDbxItemsCursor
+									.getColumnIndexOrThrow(COL_ITEM_ID));
 							DeleteItem(context, sqlRecordID);
 						}
 					} catch (DbxException e) {
 						MyLog.e("ItemsTable: validateSqlRecords ", "DbxException while iterating thru SQL table.");
 						e.printStackTrace();
 					}
-
-				}
-
-				// Iterate thru the dbxTable updating or creating SQL records
-				try {
-					DbxTable.QueryResult allRecords = dbxTable.query();
-					Iterator<DbxRecord> itr = allRecords.iterator();
-					while (itr.hasNext()) {
-						dbxRecord = itr.next();
-						dbxRecordID = dbxRecord.getId();
-						Cursor itemCursor = getItemFromDropboxID(context, dbxRecordID);
-						if (itemCursor != null && itemCursor.getCount() > 0) {
-							// update the existing record
-							UpdateItem(context, dbxRecordID, dbxRecord);
-						} else {
-							// create a new record
-							CreateItem(context, dbxRecord);
-						}
-						if (itemCursor != null) {
-							itemCursor.close();
-						}
-					}
-				} catch (DbxException e) {
-					MyLog.e("ItemsTable: validateSqlRecords ", "DbxException while iterating thru DbxTable.");
-					e.printStackTrace();
 				}
 			}
 
-			if (allItemsCursor != null) {
-				allItemsCursor.close();
+			// Iterate thru the dbxTable updating or creating SQL records
+			try {
+				DbxTable.QueryResult allRecords = dbxTable.query();
+				Iterator<DbxRecord> itr = allRecords.iterator();
+				while (itr.hasNext()) {
+					dbxRecord = itr.next();
+					dbxRecordID = dbxRecord.getId();
+					Cursor itemCursor = getItemFromDropboxID(context, dbxRecordID);
+					if (itemCursor != null && itemCursor.getCount() > 0) {
+						// update the existing record
+						UpdateItem(context, dbxRecordID, dbxRecord);
+					} else {
+						// create a new record
+						CreateItem(context, dbxRecord);
+					}
+					if (itemCursor != null) {
+						itemCursor.close();
+					}
+				}
+			} catch (DbxException e) {
+				MyLog.e("ItemsTable: validateSqlRecords ", "DbxException while iterating thru DbxTable.");
+				e.printStackTrace();
+			}
+
+			if (allDbxItemsCursor != null) {
+				allDbxItemsCursor.close();
 			}
 		}
 
+	}
+
+	private static Cursor getAllDbxItemsCursor(Context context) {
+		Cursor cursor = null;
+
+		Uri uri = CONTENT_URI;
+		String[] projection = new String[] { COL_ITEM_ID, COL_ITEM_DROPBOX_ID };
+
+		String selection = COL_ITEM_DROPBOX_ID + " != '' OR " + COL_ITEM_DROPBOX_ID + " NOT NULL";
+		String selectionArgs[] = null;
+
+		ContentResolver cr = context.getContentResolver();
+		try {
+			cursor = cr.query(uri, projection, selection, selectionArgs, SORT_ORDER_ITEM_NAME);
+		} catch (Exception e) {
+			MyLog.e("Exception error  in getAllDbxItemsCursor. ", "");
+			e.printStackTrace();
+		}
+		return cursor;
 	}
 
 }

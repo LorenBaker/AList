@@ -133,7 +133,7 @@ public class ListsTable {
 
 			+ COL_MANAGE_ITEMS_GROUP_ID + " integer default 0, "
 
-			+ COL_IS_SYNCED_TO_DROPBOX + " integer default 0, "
+			+ COL_IS_SYNCED_TO_DROPBOX + " integer default 1, "
 			+ COL_IS_LIST_PREF_SYNCED_TO_DROPBOX + " integer default 0, "
 			+ COL_IS_FIRST_TIME_SYNC + " integer default 0"
 			+ ");";
@@ -517,7 +517,7 @@ public class ListsTable {
 	// SQLite Methods that use Dropbox records
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	public static long CreateItem(Context context, DbxRecord dbxRecord) {
+	public static long CreateNewList(Context context, DbxRecord dbxRecord) {
 		// a check to see if the item is already in the database
 		// was done prior to making this call ... so don't repeat it.
 		long newlistID = -1;
@@ -590,8 +590,8 @@ public class ListsTable {
 
 	public static int DeleteList(Context context, String dbxRecordID) {
 		int numberOfDeletedRecords = -1;
-		Uri itemUri = getListUri(context, dbxRecordID);
-		long listID = ContentUris.parseId(itemUri);
+		Uri listUri = getListUri(context, dbxRecordID);
+		long listID = ContentUris.parseId(listUri);
 
 		numberOfDeletedRecords = DeleteList(context, listID);
 
@@ -609,8 +609,8 @@ public class ListsTable {
 		dbxDatastore.sync();
 	}
 
-	public static DbxRecord dbxInsert(Context context, DbxDatastore dbxDatastore, long listID, ContentValues values)
-			throws DbxException {
+	public static DbxRecord dbxInsert(Context context, DbxDatastore dbxDatastore,
+			long listID, ContentValues values) throws DbxException {
 		// This method create a new dbx List record with default values except for the list title.
 		// It quits after finding the list title from the content values
 		// To update the dbx feilds after the dbx list record has been created, use setDbxRecordValues
@@ -650,7 +650,7 @@ public class ListsTable {
 								.set(COL_MASTER_LISTVIEW_FIRST_VISIBLE_POSITION, 0)
 								.set(COL_MASTER_LISTVIEW_TOP, 0)
 								.set(COL_MANAGE_ITEMS_GROUP_ID, 0)
-								.set(COL_IS_SYNCED_TO_DROPBOX, 0)
+								.set(COL_IS_SYNCED_TO_DROPBOX, 1)
 								.set(COL_IS_LIST_PREF_SYNCED_TO_DROPBOX, 0)
 								.set(COL_IS_FIRST_TIME_SYNC, 0);
 
@@ -680,7 +680,7 @@ public class ListsTable {
 			DbxTable dbxActiveTable = dbxDatastore.getTable(TABLE_LISTS);
 
 			String dbxRecordID = getDropboxID(context, Long.parseLong(listIDstring));
-			if (!dbxRecordID.isEmpty()) {
+			if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
 				try {
 					DbxRecord dbxRecord = dbxActiveTable.get(dbxRecordID);
 					if (dbxRecord != null) {
@@ -816,7 +816,7 @@ public class ListsTable {
 			if (dbxActiveTable != null) {
 				String rowIDstring = uri.getLastPathSegment();
 				String dbxRecordID = getDropboxID(context, Long.parseLong(rowIDstring));
-				if (!dbxRecordID.isEmpty()) {
+				if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
 					try {
 						DbxRecord dbxRecord = dbxActiveTable.get(dbxRecordID);
 						if (dbxRecord != null) {
@@ -984,8 +984,8 @@ public class ListsTable {
 			}
 
 			if (dbxRecord.hasField(COL_MANAGE_ITEMS_GROUP_ID)) {
-				int intField = (int) dbxRecord.getLong(COL_MANAGE_ITEMS_GROUP_ID);
-				newFieldValues.put(COL_MANAGE_ITEMS_GROUP_ID, intField);
+				long longField = dbxRecord.getLong(COL_MANAGE_ITEMS_GROUP_ID);
+				newFieldValues.put(COL_MANAGE_ITEMS_GROUP_ID, longField);
 			}
 
 			if (dbxRecord.hasField(COL_IS_SYNCED_TO_DROPBOX)) {
@@ -1075,8 +1075,8 @@ public class ListsTable {
 					int intValue = (Integer) me.getValue();
 					dbxRecord.set(key, intValue);
 				} else if (key.equals(COL_MANAGE_ITEMS_GROUP_ID)) {
-					long intValue = (Long) me.getValue();
-					dbxRecord.set(key, intValue);
+					long longValue = (Long) me.getValue();
+					dbxRecord.set(key, longValue);
 				} else if (key.equals(COL_IS_SYNCED_TO_DROPBOX)) {
 					int intValue = (Integer) me.getValue();
 					dbxRecord.set(key, intValue);
@@ -1104,7 +1104,7 @@ public class ListsTable {
 					Iterator<DbxRecord> itr = allRecords.iterator();
 					while (itr.hasNext()) {
 						DbxRecord dbxRecord = itr.next();
-						CreateItem(context, dbxRecord);
+						CreateNewList(context, dbxRecord);
 					}
 
 				} catch (DbxException e) {
@@ -1125,56 +1125,56 @@ public class ListsTable {
 
 			// Iterate thru the SQL table records and verify if the SQL record exists in the Dbx table.
 			// If not ... delete the SQL table record
-			Cursor allItemsCursor = getAllDbxListsCursor(context);
+			Cursor allDbxListsCursor = getAllDbxListsCursor(context);
 			String dbxRecordID = "";
 			long sqlRecordID = -1;
 			DbxRecord dbxRecord = null;
-			if (allItemsCursor != null && allItemsCursor.getCount() > 0) {
-				while (allItemsCursor.moveToNext()) {
+			if (allDbxListsCursor != null && allDbxListsCursor.getCount() > 0) {
+				while (allDbxListsCursor.moveToNext()) {
 
 					try {
-						dbxRecordID = allItemsCursor.getString(allItemsCursor
+						dbxRecordID = allDbxListsCursor.getString(allDbxListsCursor
 								.getColumnIndexOrThrow(COL_LIST_DROPBOX_ID));
 						dbxRecord = dbxTable.get(dbxRecordID);
 						if (dbxRecord == null) {
 							// the SQL table record does not exist in the Dbx table ... so delete it.
-							sqlRecordID = allItemsCursor.getLong(allItemsCursor.getColumnIndexOrThrow(COL_LIST_ID));
+							sqlRecordID = allDbxListsCursor.getLong(allDbxListsCursor
+									.getColumnIndexOrThrow(COL_LIST_ID));
 							DeleteList(context, sqlRecordID);
 						}
 					} catch (DbxException e) {
 						MyLog.e("ListsTable: validateSqlRecords ", "DbxException while iterating thru SQL table.");
 						e.printStackTrace();
 					}
-
-				}
-
-				// Iterate thru the dbxTable updating or creating SQL records
-				try {
-					DbxTable.QueryResult allRecords = dbxTable.query();
-					Iterator<DbxRecord> itr = allRecords.iterator();
-					while (itr.hasNext()) {
-						dbxRecord = itr.next();
-						dbxRecordID = dbxRecord.getId();
-						Cursor itemCursor = getListFromDropboxID(context, dbxRecordID);
-						if (itemCursor != null && itemCursor.getCount() > 0) {
-							// update the existing record
-							UpdateList(context, dbxRecordID, dbxRecord);
-						} else {
-							// create a new record
-							CreateItem(context, dbxRecord);
-						}
-						if (itemCursor != null) {
-							itemCursor.close();
-						}
-					}
-				} catch (DbxException e) {
-					MyLog.e("ListsTable: validateSqlRecords ", "DbxException while iterating thru DbxTable.");
-					e.printStackTrace();
 				}
 			}
 
-			if (allItemsCursor != null) {
-				allItemsCursor.close();
+			// Iterate thru the dbxTable updating or creating SQL records
+			try {
+				DbxTable.QueryResult allRecords = dbxTable.query();
+				Iterator<DbxRecord> itr = allRecords.iterator();
+				while (itr.hasNext()) {
+					dbxRecord = itr.next();
+					dbxRecordID = dbxRecord.getId();
+					Cursor itemCursor = getListFromDropboxID(context, dbxRecordID);
+					if (itemCursor != null && itemCursor.getCount() > 0) {
+						// update the existing record
+						UpdateList(context, dbxRecordID, dbxRecord);
+					} else {
+						// create a new record
+						CreateNewList(context, dbxRecord);
+					}
+					if (itemCursor != null) {
+						itemCursor.close();
+					}
+				}
+			} catch (DbxException e) {
+				MyLog.e("ListsTable: validateSqlRecords ", "DbxException while iterating thru DbxTable.");
+				e.printStackTrace();
+			}
+
+			if (allDbxListsCursor != null) {
+				allDbxListsCursor.close();
 			}
 		}
 

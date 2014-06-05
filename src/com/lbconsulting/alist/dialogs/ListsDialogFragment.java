@@ -280,7 +280,7 @@ public class ListsDialogFragment extends DialogFragment {
 	}
 
 	protected void FillToDoList(long todosListID) {
-		AListContentProvider.setSuppressChangeNotification(true);
+		AListContentProvider.setSuppressDropboxChanges(false);
 
 		ArrayList<Long> todoGroupIDs = new ArrayList<Long>();
 		// create to do groups
@@ -291,12 +291,12 @@ public class ListsDialogFragment extends DialogFragment {
 
 		// create to do items
 		String[] todoItems = getActivity().getResources().getStringArray(R.array.todo_items);
+
 		for (int i = 0; i < todoItems.length; i++) {
 			ItemsTable.CreateNewItem(getActivity(), todosListID, todoItems[i], todoGroupIDs.get(i));
 		}
-
 		mActiveListID = todosListID;
-		AListContentProvider.setSuppressChangeNotification(false);
+		// AListContentProvider.setSuppressDropboxChanges(false);
 	}
 
 	private void fillSpinListTemplate() {

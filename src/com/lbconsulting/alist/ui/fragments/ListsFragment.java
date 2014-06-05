@@ -361,6 +361,16 @@ public class ListsFragment extends Fragment implements LoaderManager.LoaderCallb
 					flag_FirstTimeLoadingItemDataSinceOnResume = false;
 				}
 
+				if (newCursor != null) {
+					newCursor.moveToFirst();
+					int count = newCursor.getCount();
+					if (count > 0) {
+						String itemName = newCursor
+								.getString(newCursor.getColumnIndexOrThrow(ItemsTable.COL_ITEM_NAME));
+						int temp = 0;
+					}
+				}
+
 				break;
 
 			case AListUtilities.STORES_LOADER_ID:

@@ -1,11 +1,15 @@
 package com.lbconsulting.alist.database;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -13,6 +17,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.support.v4.content.CursorLoader;
 
+import com.dropbox.sync.android.DbxDatastore;
+import com.dropbox.sync.android.DbxException;
+import com.dropbox.sync.android.DbxRecord;
+import com.dropbox.sync.android.DbxTable;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
@@ -238,6 +246,18 @@ public class LocationsTable {
 		return numberOfUpdatedRecords;
 	}
 
+	public static int UpdateLocationFieldValues(Context context, long locationID, ContentValues newFieldValues) {
+		int numberOfUpdatedRecords = -1;
+		if (locationID > 1) {
+			ContentResolver cr = context.getContentResolver();
+			Uri defaultUri = Uri.withAppendedPath(CONTENT_URI, String.valueOf(locationID));
+			String selection = null;
+			String[] selectionArgs = null;
+			numberOfUpdatedRecords = cr.update(defaultUri, newFieldValues, selection, selectionArgs);
+		}
+		return numberOfUpdatedRecords;
+	}
+
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Delete Methods
 	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -267,15 +287,528 @@ public class LocationsTable {
 
 	}
 
-	/*	public static int DeleteAllLocation(Context context) {
-			int numberOfDeletedRecords = -1;
-			Uri uri = CONTENT_URI;
-			String where = COL_LOCATION_ID + " > 1";
-			String selectionArgs[] = null;
-			ContentResolver cr = context.getContentResolver();
-			numberOfDeletedRecords = cr.delete(uri, where, selectionArgs);
+	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// SQLite Methods that use Dropbox records
+	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			return numberOfDeletedRecords;
+	public static long CreateLocation(Context context, DbxRecord dbxRecord) {
+		// a check to see if the Location is already in the database
+		// was done prior to making this call ... so don't repeat it.
+		long newLocationID = -1;
+
+		ContentValues newFieldValues = setContentValues(dbxRecord);
+		Uri uri = CONTENT_URI;
+		ContentResolver cr = context.getContentResolver();
+		Uri newLocationUri = cr.insert(uri, newFieldValues);
+		if (newLocationUri != null) {
+			newLocationID = Long.parseLong(newLocationUri.getLastPathSegment());
+		}
+		return newLocationID;
+	}
+
+	public static Cursor getLocationFromDropboxID(Context context, String dbxRecordID) {
+		Uri uri = CONTENT_URI;
+		String[] projection = PROJECTION_ALL;
+		String selection = COL_LOCATION_DROPBOX_ID + " = '" + dbxRecordID + "'";
+		String selectionArgs[] = null;
+		String sortOrder = SORT_ORDER_LOCATION;
+
+		ContentResolver cr = context.getContentResolver();
+		Cursor cursor = null;
+		try {
+			cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
+		} catch (Exception e) {
+			MyLog.e("LocationsTable", "Exception error in getLocationFromDropboxID:");
+			e.printStackTrace();
+		}
+		return cursor;
+	}
+
+	public static Uri getLocationUri(Context context, String dbxRecordID) {
+		Uri LocationUri = null;
+		Cursor cursor = getLocationFromDropboxID(context, dbxRecordID);
+		if (cursor != null) {
+			cursor.moveToFirst();
+			long LocationID = cursor.getLong(cursor.getColumnIndexOrThrow(COL_LOCATION_ID));
+			LocationUri = ContentUris.withAppendedId(LocationsTable.CONTENT_URI, LocationID);
+			cursor.close();
+		}
+		return LocationUri;
+	}
+
+	public static String getDropboxID(Context context, long LocationID) {
+		String dbxID = "";
+		Cursor cursor = getLocation(context, LocationID);
+		if (cursor != null) {
+			if (cursor.getCount() > 0) {
+				cursor.moveToFirst();
+				dbxID = cursor.getString(cursor.getColumnIndexOrThrow(COL_LOCATION_DROPBOX_ID));
+			}
+			cursor.close();
+		}
+
+		return dbxID;
+	}
+
+	public static int UpdateLocation(Context context, String dbxRecordID, DbxRecord dbxRecord) {
+		int numberOfUpdatedRecords = -1;
+		ContentResolver cr = context.getContentResolver();
+		Uri LocationUri = getLocationUri(context, dbxRecordID);
+		ContentValues newFieldValues = setContentValues(dbxRecord);
+		String selection = null;
+		String[] selectionArgs = null;
+		numberOfUpdatedRecords = cr.update(LocationUri, newFieldValues, selection, selectionArgs);
+
+		return numberOfUpdatedRecords;
+	}
+
+	public static int DeleteLocation(Context context, String dbxRecordID) {
+		int numberOfDeletedRecords = -1;
+
+		Uri LocationUri = getLocationUri(context, dbxRecordID);
+		ContentResolver cr = context.getContentResolver();
+		String where = null;
+		String[] selectionArgs = null;
+		numberOfDeletedRecords = cr.delete(LocationUri, where, selectionArgs);
+
+		return numberOfDeletedRecords;
+	}
+
+	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// Dropbox DataLocation Methods
+	// /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	public static void dbxInsert(Context context, DbxDatastore DbxDatastore, long LocationID) throws DbxException {
+		ContentValues values = setContentValues(context, LocationID);
+		DbxRecord dbxRecord = dbxInsert(context, DbxDatastore, LocationID, values);
+		setDbxRecordValues(dbxRecord, values);
+		DbxDatastore.sync();
+	}
+
+	/*	public static void dbxInsertAllLocations(Context context, DbxDatastore DbxDatastore, long listID) throws DbxException {
+			Cursor LocationsCursor = getAllLocationsInListCursor(context, listID, null);
+			if (LocationsCursor != null) {
+				while (LocationsCursor.moveToNext()) {
+					ContentValues values = setContentValues(context, LocationsCursor);
+					long LocationID = LocationsCursor.getLong(LocationsCursor.getColumnIndexOrThrow(COL_LOCATION_ID));
+					DbxRecord dbxRecord = dbxInsert(context, DbxDatastore, LocationID, values);
+					setDbxRecordValues(dbxRecord, values);
+				}
+				DbxDatastore.sync();
+				LocationsCursor.close();
+			}
 		}*/
+
+	public static DbxRecord dbxInsert(Context context, DbxDatastore DbxDatastore, long locationID, ContentValues values) {
+
+		DbxRecord newLocationRecord = null;
+		if (DbxDatastore != null) {
+			DbxTable dbxActiveTable = DbxDatastore.getTable(TABLE_LOCATIONS);
+
+			if (dbxActiveTable != null) {
+
+				Set<Entry<String, Object>> s = values.valueSet();
+				Iterator<Entry<String, Object>> itr = s.iterator();
+				while (itr.hasNext()) {
+					Entry<String, Object> me = itr.next();
+					String key = me.getKey().toString();
+
+					if (key.equals(COL_LOCATION_NAME)) {
+						String LocationName = (String) me.getValue();
+						newLocationRecord = dbxActiveTable.insert()
+								.set(key, LocationName)
+								.set(COL_LOCATION_NUMBER, 1);
+
+						// update the SQLite record with the dbxID
+						AListContentProvider.setSuppressDropboxChanges(true);
+						String dbxID = newLocationRecord.getId();
+						ContentValues newFieldValues = new ContentValues();
+						newFieldValues.put(COL_LOCATION_DROPBOX_ID, dbxID);
+						UpdateLocationFieldValues(context, locationID, newFieldValues);
+
+						MyLog.d("LocationsTable: dbxInsert ", key + ":" + LocationName);
+						AListContentProvider.setSuppressDropboxChanges(false);
+
+					} else if (key.equals(COL_LOCATION_NUMBER)) {
+						int locationNumber = (Integer) me.getValue();
+						if (newLocationRecord != null) {
+							newLocationRecord.set(key, locationNumber);
+							MyLog.d("LocationsTable: dbxInsert ", key + ":" + locationNumber);
+						}
+					}
+				}
+			}
+		} else {
+			MyLog.e("LocationsTable: dbxInsert ", "Unable to insert record. DbxDatastore is null!");
+		}
+		return newLocationRecord;
+
+	}
+
+	public static void dbxDeleteSingleRecord(Context context, DbxDatastore DbxDatastore, String locationIDstring) {
+		if (DbxDatastore != null) {
+			DbxTable dbxActiveTable = DbxDatastore.getTable(TABLE_LOCATIONS);
+
+			String dbxRecordID = getDropboxID(context, Long.parseLong(locationIDstring));
+			if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
+				try {
+					DbxRecord dbxRecord = dbxActiveTable.get(dbxRecordID);
+					if (dbxRecord != null) {
+						dbxRecord.deleteRecord();
+						DbxDatastore.sync();
+					}
+				} catch (DbxException e) {
+					MyLog.e("LocationsTable: dbxDeleteSingleRecord ",
+							"DbxException while trying delete a dropbox record.");
+				}
+			}
+		} else {
+			MyLog.e("LocationsTable: dbxDeleteSingleRecord ", "Unable to delete record. DbxDatastore is null!");
+		}
+	}
+
+	public static void dbxDeleteMultipleRecords(Context context, DbxDatastore DbxDatastore, Uri uri, String selection,
+			String[] selectionArgs) {
+
+		if (DbxDatastore != null) {
+			DbxTable dbxActiveTable = DbxDatastore.getTable(TABLE_LOCATIONS);
+
+			if (dbxActiveTable != null) {
+				String projection[] = { COL_LOCATION_ID, COL_LOCATION_DROPBOX_ID };
+				String sortOrder = null;
+				String dbxID;
+				DbxRecord dbxRecord;
+				ContentResolver cr = context.getContentResolver();
+				Cursor cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
+				if (cursor != null) {
+					try {
+						while (cursor.moveToNext()) {
+							dbxID = cursor.getString(cursor.getColumnIndexOrThrow(COL_LOCATION_DROPBOX_ID));
+							dbxRecord = dbxActiveTable.get(dbxID);
+							if (dbxRecord != null) {
+								dbxRecord.deleteRecord();
+							}
+						}
+
+						DbxDatastore.sync();
+					} catch (DbxException e) {
+						MyLog.e("LocationsTable: dbxDeleteMultipleRecords ",
+								"DbxException while trying to delete multiple dropbox records.");
+						e.printStackTrace();
+
+					} finally {
+						cursor.close();
+					}
+				}
+			}
+		} else {
+			MyLog.e("LocationsTable: dbxDeleteMultipleRecords ", "Unable to delete records. DbxDatastore is null!");
+		}
+	}
+
+	public static void dbxDeleteAllRecords(DbxDatastore DbxDatastore) {
+		if (DbxDatastore != null) {
+			DbxTable dbxActiveTable = DbxDatastore.getTable(TABLE_LOCATIONS);
+			if (dbxActiveTable != null) {
+				try {
+					DbxTable.QueryResult allRecords = dbxActiveTable.query();
+					Iterator<DbxRecord> itr = allRecords.iterator();
+					while (itr.hasNext()) {
+						DbxRecord dbxRecord = itr.next();
+						dbxRecord.deleteRecord();
+					}
+
+					DbxDatastore.sync();
+
+				} catch (DbxException e) {
+					MyLog.e("LocationsTable: dbxDeleteAllRecords ", "DbxException while deleteing all dropbox records.");
+					e.printStackTrace();
+				}
+			}
+		} else {
+			MyLog.e("LocationsTable: dbxDeleteAllRecords ", "Unable to delete records. DbxDatastore is null!");
+		}
+	}
+
+	public static int sqlDeleteAllRecords(Context context) {
+		int numberOfDeletedRecords = -1;
+
+		Uri uri = CONTENT_URI;
+		String where = null;
+		String selectionArgs[] = null;
+		ContentResolver cr = context.getContentResolver();
+		numberOfDeletedRecords = cr.delete(uri, where, selectionArgs);
+
+		return numberOfDeletedRecords;
+	}
+
+	public static void dbxUpdateMultipleRecords(Context context, DbxDatastore DbxDatastore, ContentValues values,
+			Uri uri, String selection, String[] selectionArgs) {
+
+		if (DbxDatastore != null) {
+			DbxTable dbxActiveTable = DbxDatastore.getTable(TABLE_LOCATIONS);
+
+			if (dbxActiveTable != null) {
+				String projection[] = { COL_LOCATION_ID, COL_LOCATION_DROPBOX_ID };
+				String sortOrder = null;
+				String dbxID;
+				DbxRecord dbxRecord;
+				ContentResolver cr = context.getContentResolver();
+				Cursor cursor = cr.query(uri, projection, selection, selectionArgs, sortOrder);
+				if (cursor != null) {
+					try {
+						while (cursor.moveToNext()) {
+							dbxID = cursor.getString(cursor.getColumnIndexOrThrow(COL_LOCATION_DROPBOX_ID));
+							dbxRecord = dbxActiveTable.get(dbxID);
+							if (dbxRecord != null) {
+								setDbxRecordValues(dbxRecord, values);
+							}
+						}
+
+						DbxDatastore.sync();
+					} catch (DbxException e) {
+						MyLog.e("LocationsTable: dbxUpdateMultipleRecords ",
+								"DbxException while trying update records.");
+						e.printStackTrace();
+
+					} finally {
+						cursor.close();
+					}
+				}
+			}
+		} else {
+			MyLog.e("LocationsTable: dbxUpdateMultipleRecords ", "Unable to update records. DbxDatastore is null!");
+		}
+	}
+
+	public static void dbxUpdateSingleRecord(Context context, DbxDatastore DbxDatastore, ContentValues values, Uri uri) {
+		if (DbxDatastore != null) {
+			DbxTable dbxActiveTable = DbxDatastore.getTable(TABLE_LOCATIONS);
+
+			if (dbxActiveTable != null) {
+				String rowIDstring = uri.getLastPathSegment();
+				String dbxRecordID = getDropboxID(context, Long.parseLong(rowIDstring));
+				if (dbxRecordID != null && !dbxRecordID.isEmpty()) {
+					try {
+						DbxRecord dbxRecord = dbxActiveTable.get(dbxRecordID);
+						if (dbxRecord != null) {
+							setDbxRecordValues(dbxRecord, values);
+							DbxDatastore.sync();
+						} else {
+							// the dbxLocation has been deleted ...
+							// but for some reason it has not been deleted from the sql database
+							// so delete it now.
+							sqlDeleteLocationAlreadyDeletedFromDropbox(context, dbxRecordID);
+							// sync to hopefully capture other dropbox changes
+							DbxDatastore.sync();
+						}
+
+					} catch (DbxException e) {
+						MyLog.e("LocationsTable: dbxUpdateSingleRecord ", "DbxException while trying update records.");
+						e.printStackTrace();
+					}
+				}
+			}
+		} else {
+			MyLog.e("LocationsTable: dbxUpdateSingleRecord ", "Unable to update record. DbxDatastore is null!");
+		}
+	}
+
+	private static void sqlDeleteLocationAlreadyDeletedFromDropbox(Context context, String dbxRecordID) {
+		AListContentProvider.setSuppressDropboxChanges(true);
+		DeleteLocation(context, dbxRecordID);
+		AListContentProvider.setSuppressDropboxChanges(false);
+	}
+
+	private static ContentValues setContentValues(Context context, Cursor cursor) {
+		ContentValues newFieldValues = new ContentValues();
+		if (cursor != null) {
+			for (String col : PROJECTION_ALL) {
+				if (col.equals(COL_LOCATION_ID) || col.equals(COL_LOCATION_DROPBOX_ID)) {
+					// do nothing
+				} else if (col.equals(COL_LOCATION_NUMBER)) {
+					int value = cursor.getInt(cursor.getColumnIndexOrThrow(col));
+					newFieldValues.put(col, value);
+
+				} else {
+					String value = cursor.getString(cursor.getColumnIndexOrThrow(col));
+					newFieldValues.put(col, value);
+				}
+			}
+		}
+		return newFieldValues;
+	}
+
+	/*						+ TABLE_LOCATIONS
+		+ " ("
+		+ COL_LOCATION_ID + " integer primary key autoincrement, "
+		+ COL_LOCATION_DROPBOX_ID + " text, "
+		+ COL_LOCATION_NAME + " text collate nocase, "
+		+ COL_LOCATION_NUMBER + " integer"*/
+
+	private static ContentValues setContentValues(Context context, long LocationID) {
+		ContentValues newFieldValues = null;
+		Cursor cursor = getLocation(context, LocationID);
+		if (cursor != null) {
+			cursor.moveToFirst();
+			newFieldValues = setContentValues(context, cursor);
+			cursor.close();
+		}
+		return newFieldValues;
+	}
+
+	private static ContentValues setContentValues(DbxRecord dbxRecord) {
+		ContentValues newFieldValues = new ContentValues();
+
+		if (dbxRecord != null) {
+			String dbxID = dbxRecord.getId();
+			newFieldValues.put(COL_LOCATION_DROPBOX_ID, dbxID);
+
+			if (dbxRecord.hasField(COL_LOCATION_NAME)) {
+				String locationName = dbxRecord.getString(COL_LOCATION_NAME);
+				newFieldValues.put(COL_LOCATION_NAME, locationName);
+			}
+
+			if (dbxRecord.hasField(COL_LOCATION_NUMBER)) {
+				int locationNumber = (int) dbxRecord.getLong(COL_LOCATION_NUMBER);
+				newFieldValues.put(COL_LOCATION_NUMBER, locationNumber);
+			}
+		}
+		return newFieldValues;
+	}
+
+	private static void setDbxRecordValues(DbxRecord dbxRecord, ContentValues values) {
+		if (dbxRecord != null) {
+			Set<Entry<String, Object>> s = values.valueSet();
+			Iterator<Entry<String, Object>> itr = s.iterator();
+			while (itr.hasNext()) {
+				Entry<String, Object> me = itr.next();
+				String key = me.getKey().toString();
+
+				if (key.equals(COL_LOCATION_NAME)) {
+					String string = (String) me.getValue();
+					if (string == null) {
+						string = "";
+					}
+					dbxRecord.set(key, string);
+
+				} else if (key.equals(COL_LOCATION_NUMBER)) {
+					int locationNumber = (Integer) me.getValue();
+					dbxRecord.set(key, locationNumber);
+
+				} else if (key.equals(COL_LOCATION_DROPBOX_ID)) {
+					// do nothing
+
+				} else {
+					MyLog.e("LocationsTable: setDbxRecordValues ", "Unknown column name:" + key);
+				}
+			}
+		}
+	}
+
+	/*	public static void replaceSqlRecordsWithDbxRecords(Context context, DbxDatastore DbxDatastore) {
+	MAY NEED TO CHECK IF SQL RECORD ALREADY EXISTS
+			if (DbxDatastore != null) {
+				DbxTable dbxActiveTable = DbxDatastore.getTable(TABLE_LOCATIONS);
+				if (dbxActiveTable != null) {
+					try {
+						DbxTable.QueryResult allRecords = dbxActiveTable.query();
+						Iterator<DbxRecord> itr = allRecords.iterator();
+						while (itr.hasNext()) {
+							DbxRecord dbxRecord = itr.next();
+							CreateLocation(context, dbxRecord);
+						}
+
+					} catch (DbxException e) {
+						MyLog.e("LocationsTable: replaceSqlRecordsWithDbxRecords ",
+								"DbxException while replacing all sql records.");
+						e.printStackTrace();
+					}
+				}
+
+			} else {
+				MyLog.e("LocationsTable: replaceSqlRecordsWithDbxRecords ",
+						"Unable to replace sql records. DbxDatastore is null!");
+			}
+		}*/
+
+	public static void validateSqlRecords(Context context, DbxTable dbxTable) {
+		if (dbxTable != null) {
+
+			// Iterate thru the SQL table records and verify if the SQL record exists in the Dbx table.
+			// If not ... delete the SQL table record
+			Cursor allDbxLocationsCursor = getAllDbxLocationsCursor(context);
+			String dbxRecordID = "";
+			long sqlRecordID = -1;
+			DbxRecord dbxRecord = null;
+			if (allDbxLocationsCursor != null && allDbxLocationsCursor.getCount() > 0) {
+				while (allDbxLocationsCursor.moveToNext()) {
+
+					try {
+						dbxRecordID = allDbxLocationsCursor.getString(allDbxLocationsCursor
+								.getColumnIndexOrThrow(COL_LOCATION_DROPBOX_ID));
+						dbxRecord = dbxTable.get(dbxRecordID);
+						if (dbxRecord == null) {
+							// the SQL table record does not exist in the Dbx table ... so delete it.
+							sqlRecordID = allDbxLocationsCursor.getLong(allDbxLocationsCursor
+									.getColumnIndexOrThrow(COL_LOCATION_ID));
+							DeleteLocation(context, sqlRecordID);
+						}
+					} catch (DbxException e) {
+						MyLog.e("LocationsTable: validateSqlRecords ", "DbxException while iterating thru SQL table.");
+						e.printStackTrace();
+					}
+				}
+			}
+
+			// Iterate thru the dbxTable updating or creating SQL records
+			try {
+				DbxTable.QueryResult allRecords = dbxTable.query();
+				Iterator<DbxRecord> itr = allRecords.iterator();
+				while (itr.hasNext()) {
+					dbxRecord = itr.next();
+					dbxRecordID = dbxRecord.getId();
+					Cursor LocationCursor = getLocationFromDropboxID(context, dbxRecordID);
+					if (LocationCursor != null && LocationCursor.getCount() > 0) {
+						// update the existing record
+						UpdateLocation(context, dbxRecordID, dbxRecord);
+					} else {
+						// create a new record
+						CreateLocation(context, dbxRecord);
+					}
+					if (LocationCursor != null) {
+						LocationCursor.close();
+					}
+				}
+			} catch (DbxException e) {
+				MyLog.e("LocationsTable: validateSqlRecords ", "DbxException while iterating thru DbxTable.");
+				e.printStackTrace();
+			}
+
+			if (allDbxLocationsCursor != null) {
+				allDbxLocationsCursor.close();
+			}
+		}
+
+	}
+
+	private static Cursor getAllDbxLocationsCursor(Context context) {
+		Cursor cursor = null;
+
+		Uri uri = CONTENT_URI;
+		String[] projection = new String[] { COL_LOCATION_ID, COL_LOCATION_DROPBOX_ID };
+
+		String selection = COL_LOCATION_DROPBOX_ID + " != '' OR " + COL_LOCATION_DROPBOX_ID + " NOT NULL";
+		String selectionArgs[] = null;
+
+		ContentResolver cr = context.getContentResolver();
+		try {
+			cursor = cr.query(uri, projection, selection, selectionArgs, SORT_ORDER_LOCATION);
+		} catch (Exception e) {
+			MyLog.e("Exception error  in getAllDbxLocationsCursor. ", "");
+			e.printStackTrace();
+		}
+		return cursor;
+	}
 
 }

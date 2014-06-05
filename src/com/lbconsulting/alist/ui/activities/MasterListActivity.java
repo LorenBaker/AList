@@ -18,6 +18,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.dropbox.sync.android.DbxDatastore;
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ListsSpinnerCursorAdapter;
 import com.lbconsulting.alist.classes.ListSettings;
@@ -28,10 +29,12 @@ import com.lbconsulting.alist.ui.fragments.MasterListFragment;
 import com.lbconsulting.alist.utilities.AListUtilities;
 import com.lbconsulting.alist.utilities.MyLog;
 
-public class MasterListActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+public class MasterListActivity extends FragmentActivity implements LoaderManager.LoaderCallbacks<Cursor>,
+		DbxDatastore.SyncStatusListener {
 
 	private MasterListFragment mMasterListFragment;
 
+	private DbxDatastore mDbxDatastore = null;
 	private long mActiveListID = 0;
 	private int mActiveListPosition = 0;
 	private ListSettings mListSettings;
@@ -46,8 +49,6 @@ public class MasterListActivity extends FragmentActivity implements LoaderManage
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		AListContentProvider.setContext(this);
 
 		setContentView(R.layout.activity_master_list);
 		View view = findViewById(R.id.frag_masterList_placeholder);
@@ -143,7 +144,14 @@ public class MasterListActivity extends FragmentActivity implements LoaderManage
 		SharedPreferences storedStates = getSharedPreferences("AList", MODE_PRIVATE);
 		mActiveListID = storedStates.getLong("ActiveListID", -1);
 		mActiveListPosition = storedStates.getInt("ActiveListPosition", 0);
-		;
+
+		AListContentProvider.setContext(this);
+		if (mDbxDatastore == null) {
+			mDbxDatastore = AListContentProvider.getDbxDatastore();
+		}
+		if (mDbxDatastore != null) {
+			mDbxDatastore.addSyncStatusListener(this);
+		}
 		super.onResume();
 	}
 
@@ -155,6 +163,11 @@ public class MasterListActivity extends FragmentActivity implements LoaderManage
 		applicationStates.putLong("ActiveListID", mActiveListID);
 		applicationStates.putInt("ActiveListPosition", mActiveListPosition);
 		applicationStates.commit();
+
+		if (mDbxDatastore != null) {
+			mDbxDatastore.removeSyncStatusListener(this);
+		}
+
 		super.onPause();
 	}
 
@@ -255,7 +268,7 @@ public class MasterListActivity extends FragmentActivity implements LoaderManage
 	@Override
 	protected void onDestroy() {
 		MyLog.i("MasterList_ACTIVITY", "onDestroy");
-		AListContentProvider.setContext(null);
+		// AListContentProvider.setContext(null);
 		super.onDestroy();
 	}
 
@@ -288,5 +301,13 @@ public class MasterListActivity extends FragmentActivity implements LoaderManage
 		int id = loader.getId();
 		MyLog.i("MasterList_ACTIVITY", "onLoaderReset; id = " + id);
 		mListsSpinnerCursorAdapter.swapCursor(null);
+	}
+
+	@Override
+	public void onDatastoreStatusChange(DbxDatastore store) {
+		AListContentProvider.setDbxDatastore(store);
+		if (store.getSyncStatus().hasIncoming) {
+			AListContentProvider.onDatastoreStatusChange(store);
+		}
 	}
 }

@@ -19,6 +19,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.dropbox.sync.android.DbxDatastore;
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ManageItemsPagerAdapter;
 import com.lbconsulting.alist.classes.AListEvents.ListTargetSelected;
@@ -34,7 +35,9 @@ import com.lbconsulting.alist.utilities.MyLog;
 
 import de.greenrobot.event.EventBus;
 
-public class ManageItemsActivity extends FragmentActivity {
+public class ManageItemsActivity extends FragmentActivity implements DbxDatastore.SyncStatusListener {
+
+	private DbxDatastore mDbxDatastore = null;
 
 	private ManageItemsPagerAdapter mCheckItemsPagerAdapter;
 	private ViewPager mPager;
@@ -59,7 +62,6 @@ public class ManageItemsActivity extends FragmentActivity {
 
 		setContentView(R.layout.activity_check_items_pager);
 
-		AListContentProvider.setContext(this);
 		EventBus.getDefault().register(this);
 
 		SharedPreferences storedStates = getSharedPreferences("AList", MODE_PRIVATE);
@@ -217,12 +219,21 @@ public class ManageItemsActivity extends FragmentActivity {
 		mActiveListPosition = storedStates.getInt("ActiveListPosition", -1);
 		mActiveTabPosition = storedStates.getInt("ActiveTabPosition", -1);
 
+		AListContentProvider.setContext(this);
+		if (mDbxDatastore == null) {
+			mDbxDatastore = AListContentProvider.getDbxDatastore();
+		}
+		if (mDbxDatastore != null) {
+			mDbxDatastore.addSyncStatusListener(this);
+		}
+
 		if (mActiveListPosition > -1) {
 			mPager.setCurrentItem(mActiveListPosition);
 		}
 
 		getActionBar().setSelectedNavigationItem(mActiveTabPosition);
 		EventBus.getDefault().post(new ManageItemsTabPostionChange(mActiveListID, mActiveTabPosition));
+
 		super.onResume();
 	}
 
@@ -236,6 +247,10 @@ public class ManageItemsActivity extends FragmentActivity {
 		applicationStates.putInt("ActiveTabPosition", mActiveTabPosition);
 
 		applicationStates.commit();
+
+		if (mDbxDatastore != null) {
+			mDbxDatastore.removeSyncStatusListener(this);
+		}
 		super.onPause();
 	}
 
@@ -505,7 +520,7 @@ public class ManageItemsActivity extends FragmentActivity {
 			mAllListsCursor.close();
 		}
 
-		AListContentProvider.setContext(null);
+		// AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}
@@ -542,5 +557,13 @@ public class ManageItemsActivity extends FragmentActivity {
 
 		}
 		return true;
+	}
+
+	@Override
+	public void onDatastoreStatusChange(DbxDatastore store) {
+		AListContentProvider.setDbxDatastore(store);
+		if (store.getSyncStatus().hasIncoming) {
+			AListContentProvider.onDatastoreStatusChange(store);
+		}
 	}
 }

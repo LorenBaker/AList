@@ -16,6 +16,7 @@ import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.dropbox.sync.android.DbxDatastore;
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.StoresPagerAdaptor;
 import com.lbconsulting.alist.classes.AListEvents.RestartStoresActivity;
@@ -29,7 +30,9 @@ import com.lbconsulting.alist.utilities.MyLog;
 
 import de.greenrobot.event.EventBus;
 
-public class ManageStoresActivity extends FragmentActivity {
+public class ManageStoresActivity extends FragmentActivity implements DbxDatastore.SyncStatusListener {
+
+	private DbxDatastore mDbxDatastore = null;
 
 	private long mActiveListID = -1;
 	private long mActiveStoreID = -1;
@@ -46,7 +49,6 @@ public class ManageStoresActivity extends FragmentActivity {
 		MyLog.i("Stores_ACTIVITY", "onCreate");
 		super.onCreate(savedInstanceState);
 
-		AListContentProvider.setContext(this);
 		EventBus.getDefault().register(this);
 
 		setContentView(R.layout.activity_stores_pager);
@@ -140,6 +142,15 @@ public class ManageStoresActivity extends FragmentActivity {
 		mActiveListID = storedStates.getLong("ActiveListID", -1);
 		mListSettings = new ListSettings(this, mActiveListID);
 		mActiveStoreID = mListSettings.getActiveStoreID();
+
+		AListContentProvider.setContext(this);
+		if (mDbxDatastore == null) {
+			mDbxDatastore = AListContentProvider.getDbxDatastore();
+		}
+		if (mDbxDatastore != null) {
+			mDbxDatastore.addSyncStatusListener(this);
+		}
+
 		mAllStoresCursor = StoresTable.getAllStoresInListCursor(this, mActiveListID, StoresTable.SORT_ORDER_STORE_NAME);
 		if (mAllStoresCursor != null && mAllStoresCursor.getCount() > 0) {
 			if (mActiveStoreID > 1) {
@@ -156,12 +167,16 @@ public class ManageStoresActivity extends FragmentActivity {
 			// so... add a new store
 			AddNewStore();
 		}
+
 		super.onResume();
 	}
 
 	@Override
 	protected void onPause() {
 		MyLog.i("Stores_ACTIVITY", "onPause");
+		if (mDbxDatastore != null) {
+			mDbxDatastore.removeSyncStatusListener(this);
+		}
 		super.onPause();
 	}
 
@@ -276,9 +291,17 @@ public class ManageStoresActivity extends FragmentActivity {
 	protected void onDestroy() {
 		MyLog.i("Stores_ACTIVITY", "onDestroy");
 		// Unregister since the activity is about to be closed.
-		AListContentProvider.setContext(null);
+		// AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		super.onDestroy();
+	}
+
+	@Override
+	public void onDatastoreStatusChange(DbxDatastore store) {
+		AListContentProvider.setDbxDatastore(store);
+		if (store.getSyncStatus().hasIncoming) {
+			AListContentProvider.onDatastoreStatusChange(store);
+		}
 	}
 
 }

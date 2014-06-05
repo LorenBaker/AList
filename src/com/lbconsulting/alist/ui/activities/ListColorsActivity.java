@@ -14,6 +14,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ScrollView;
 
+import com.dropbox.sync.android.DbxDatastore;
 import com.larswerkman.holocolorpicker.ColorPicker;
 import com.larswerkman.holocolorpicker.ColorPicker.OnColorChangedListener;
 import com.larswerkman.holocolorpicker.SVBar;
@@ -33,7 +34,10 @@ import com.lbconsulting.alist.utilities.MyLog;
 
 import de.greenrobot.event.EventBus;
 
-public class ListColorsActivity extends FragmentActivity implements View.OnClickListener, OnColorChangedListener {
+public class ListColorsActivity extends FragmentActivity implements View.OnClickListener, OnColorChangedListener,
+		DbxDatastore.SyncStatusListener {
+
+	private DbxDatastore mDbxDatastore = null;
 
 	private ListColorsPreviewPagerAdapter mColorsPreviewPagerAdapter;
 	private ViewPager mPager;
@@ -75,8 +79,6 @@ public class ListColorsActivity extends FragmentActivity implements View.OnClick
 		super.onCreate(savedInstanceState);
 
 		setContentView(R.layout.activity_list_colors);
-
-		AListContentProvider.setContext(this);
 		EventBus.getDefault().register(this);
 
 		mPresetsScrollView = (ScrollView) findViewById(R.id.presetsScrollView);
@@ -415,10 +417,19 @@ public class ListColorsActivity extends FragmentActivity implements View.OnClick
 		mActiveListPosition = storedStates.getInt("ActiveListPosition", -1);
 		mColorsActivitySelectedNavigationIndex = storedStates.getInt("ColorsActivitySelectedNavigationIndex", 0);
 
+		AListContentProvider.setContext(this);
+		if (mDbxDatastore == null) {
+			mDbxDatastore = AListContentProvider.getDbxDatastore();
+		}
+		if (mDbxDatastore != null) {
+			mDbxDatastore.addSyncStatusListener(this);
+		}
+
 		if (mActiveListPosition > -1) {
 			mPager.setCurrentItem(mActiveListPosition);
 		}
 		getActionBar().setSelectedNavigationItem(mColorsActivitySelectedNavigationIndex);
+
 		super.onResume();
 	}
 
@@ -431,6 +442,10 @@ public class ListColorsActivity extends FragmentActivity implements View.OnClick
 		applicationStates.putInt("ActiveListPosition", mActiveListPosition);
 		applicationStates.putInt("ColorsActivitySelectedNavigationIndex", getActionBar().getSelectedNavigationIndex());
 		applicationStates.commit();
+
+		if (mDbxDatastore != null) {
+			mDbxDatastore.removeSyncStatusListener(this);
+		}
 		super.onPause();
 	}
 
@@ -458,7 +473,7 @@ public class ListColorsActivity extends FragmentActivity implements View.OnClick
 		if (mAllListsCursor != null) {
 			mAllListsCursor.close();
 		}
-		AListContentProvider.setContext(null);
+		// AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		super.onDestroy();
 	}
@@ -468,6 +483,14 @@ public class ListColorsActivity extends FragmentActivity implements View.OnClick
 
 		if (!mInhibitColorChangeBroadcast) {
 			EventBus.getDefault().post(new ColorPickerColorChange(mActiveListID, color));
+		}
+	}
+
+	@Override
+	public void onDatastoreStatusChange(DbxDatastore store) {
+		AListContentProvider.setDbxDatastore(store);
+		if (store.getSyncStatus().hasIncoming) {
+			AListContentProvider.onDatastoreStatusChange(store);
 		}
 	}
 

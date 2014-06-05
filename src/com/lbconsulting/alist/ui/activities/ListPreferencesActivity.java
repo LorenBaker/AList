@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.dropbox.sync.android.DbxDatastore;
 import com.lbconsulting.alist.R;
 import com.lbconsulting.alist.adapters.ListPreferencesPagerAdaptor;
 import com.lbconsulting.alist.classes.AListEvents.ListTitleChanged;
@@ -21,7 +22,9 @@ import com.lbconsulting.alist.utilities.MyLog;
 
 import de.greenrobot.event.EventBus;
 
-public class ListPreferencesActivity extends FragmentActivity {
+public class ListPreferencesActivity extends FragmentActivity implements DbxDatastore.SyncStatusListener {
+
+	private DbxDatastore mDbxDatastore = null;
 
 	private long mActiveListID = -1;
 	private int mActiveListPosition = 0;
@@ -37,7 +40,6 @@ public class ListPreferencesActivity extends FragmentActivity {
 
 		setContentView(R.layout.activity_list_preferences_pager);
 
-		AListContentProvider.setContext(this);
 		EventBus.getDefault().register(this);
 
 		View frag_colors_placeholder = this.findViewById(R.id.frag_colors_placeholder);
@@ -138,6 +140,15 @@ public class ListPreferencesActivity extends FragmentActivity {
 		mActiveListID = storedStates.getLong("ActiveListID", -1);
 		mActiveListPosition = storedStates.getInt("ActiveListPosition", 0);
 		mPager.setCurrentItem(mActiveListPosition);
+
+		AListContentProvider.setContext(this);
+		if (mDbxDatastore == null) {
+			mDbxDatastore = AListContentProvider.getDbxDatastore();
+		}
+		if (mDbxDatastore != null) {
+			mDbxDatastore.addSyncStatusListener(this);
+		}
+
 		super.onResume();
 	}
 
@@ -149,6 +160,10 @@ public class ListPreferencesActivity extends FragmentActivity {
 		applicationStates.putLong("ActiveListID", mActiveListID);
 		applicationStates.putInt("ActiveListPosition", mActiveListPosition);
 		applicationStates.commit();
+
+		if (mDbxDatastore != null) {
+			mDbxDatastore.removeSyncStatusListener(this);
+		}
 		super.onPause();
 	}
 
@@ -174,9 +189,17 @@ public class ListPreferencesActivity extends FragmentActivity {
 	protected void onDestroy() {
 		MyLog.i("ListPreferences_ACTIVITY", "onDestroy");
 		// Unregister since the activity is about to be closed.
-		AListContentProvider.setContext(null);
+		// AListContentProvider.setContext(null);
 		EventBus.getDefault().unregister(this);
 		super.onDestroy();
+	}
+
+	@Override
+	public void onDatastoreStatusChange(DbxDatastore store) {
+		AListContentProvider.setDbxDatastore(store);
+		if (store.getSyncStatus().hasIncoming) {
+			AListContentProvider.onDatastoreStatusChange(store);
+		}
 	}
 
 }
